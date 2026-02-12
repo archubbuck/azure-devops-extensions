@@ -47,7 +47,6 @@ jobs:
           fi
           
           # Package extension
-          tfx extension create --manifest-globs azure-devops-extension.json --output-path ./output --overrides-file ./output/overrides.json || \
           tfx extension create --manifest-globs azure-devops-extension.json --output-path ./output
           
           # Publish extension
@@ -71,6 +70,9 @@ jobs:
           retention-days: 30
       
       - name: Create release info
+        env:
+          AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+          ORGANIZATION_NAME: archubbuck
         run: |
           echo "Extension built and packaged successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
