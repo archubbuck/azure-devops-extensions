@@ -24,7 +24,7 @@ A centralized notification hub for Azure DevOps that aggregates activity across 
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
+- Node.js (v20 or higher)
 - npm or yarn
 - Azure DevOps account (for testing the extension)
 

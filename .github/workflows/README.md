@@ -14,7 +14,7 @@ This directory contains GitHub Actions workflows for continuous integration and 
 
 **Steps**:
 1. Checkout code
-2. Setup Node.js 18
+2. Setup Node.js 20
 3. Install dependencies
 4. Run linting
 5. Run tests
@@ -31,7 +31,7 @@ This directory contains GitHub Actions workflows for continuous integration and 
 
 **Steps**:
 1. Checkout code
-2. Setup Node.js 18
+2. Setup Node.js 20
 3. Install dependencies
 4. Build the extension
 5. Install TFX CLI
