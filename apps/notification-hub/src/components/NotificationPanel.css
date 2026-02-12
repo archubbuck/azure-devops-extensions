@@ -171,12 +171,7 @@
   color: #605e5c;
 }
 
-.empty-state p:first-child {
-  font-size: 48px;
-  margin-bottom: 8px;
-}
-
-.empty-state p:last-child {
+.empty-state p {
   font-size: 14px;
   margin: 0;
 }

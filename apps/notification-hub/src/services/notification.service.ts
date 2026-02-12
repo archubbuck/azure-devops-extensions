@@ -16,8 +16,10 @@ export class NotificationService {
   private static instance: NotificationService;
   private notifications: Notification[] = [];
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  private constructor() {}
+  private constructor() {
+    // Load saved notification state from localStorage
+    this.loadFromLocalStorage();
+  }
 
   public static getInstance(): NotificationService {
     if (!NotificationService.instance) {

@@ -42,7 +42,7 @@ npm install
 ### Development
 
 ```bash
-# Start the development server
+# Start the development server (note: extension requires Azure DevOps context to run)
 npm run dev
 
 # Build the project
@@ -54,6 +54,8 @@ npm run lint
 # Run tests
 npm run test
 ```
+
+**Note**: The extension cannot run standalone in a browser because it requires the Azure DevOps SDK context. See [DEPLOYMENT.md](./DEPLOYMENT.md) for instructions on packaging and testing the extension in Azure DevOps.
 
 ### Building the Extension
 
@@ -73,6 +75,8 @@ The extension manifest is located at `azure-devops-extension.json`. This file de
 - Contributions (header action, panel)
 - Required scopes (work items, code, notifications)
 - File paths for deployment
+
+For detailed instructions on packaging and deploying the extension, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ### Project Structure
 
