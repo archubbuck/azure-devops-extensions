@@ -174,6 +174,26 @@ To release a new major or minor version:
 3. Commit and push to `main` branch
 4. The CD workflow will automatically set the patch version and publish (e.g., `2.0.15`)
 
+### Handling Version Conflicts
+
+If you encounter "Version number must increase" errors during publishing:
+
+**Cause**: This typically happens when:
+- The git history has been rewritten (rebased, grafted, or shallow cloned)
+- The commit count no longer matches the published version history
+- The calculated PATCH version is less than or equal to an already-published version
+
+**Solution**: Increment the MINOR or MAJOR version in `azure-devops-extension.json`:
+
+```json
+{
+  "version": "1.1.0",  // Changed from 1.0.x
+  ...
+}
+```
+
+This ensures the next automatic version (e.g., `1.1.2`) will be higher than any previously published version in the 1.0.x series.
+
 ## Troubleshooting
 
 ### Workflow fails with "Publisher not found"
