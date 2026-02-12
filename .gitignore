@@ -5,6 +5,10 @@ dist
 tmp
 out-tsc
 
+# extension packages
+output
+*.vsix
+
 # dependencies
 node_modules
 
