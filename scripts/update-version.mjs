@@ -9,7 +9,7 @@
  * Versioning strategy:
  * - MAJOR.MINOR.PATCH format (semantic versioning)
  * - MAJOR.MINOR from azure-devops-extension.json (manually controlled)
- * - PATCH auto-incremented based on commit count since last tag or initial commit
+ * - PATCH auto-incremented based on total git commit count from the start of the repository
  */
 
 import { readFileSync, writeFileSync } from 'fs';
@@ -56,7 +56,7 @@ function updateVersion() {
   
   const versionParts = currentVersion.split('.');
   if (versionParts.length < 2) {
-    throw new Error(`Invalid version format: ${currentVersion}. Expected MAJOR.MINOR.PATCH format.`);
+    throw new Error(`Invalid version format: ${currentVersion}. Expected MAJOR.MINOR format (PATCH is generated automatically).`);
   }
   
   const major = parseInt(versionParts[0], 10);
