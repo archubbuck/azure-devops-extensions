@@ -22,15 +22,9 @@ export function App() {
   }, [notificationService]);
 
   useEffect(() => {
-    log('App mounted, starting notification refresh');
-    // Load notifications initially and refresh periodically
+    log('App mounted, loading initial notifications');
+    // Load notifications initially
     refreshNotifications();
-    const interval = setInterval(refreshNotifications, 60000); // Refresh every minute
-
-    return () => {
-      log('App unmounting, clearing interval');
-      clearInterval(interval);
-    };
   }, [refreshNotifications]);
 
   const handlePanelClose = () => {
