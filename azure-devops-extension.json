@@ -2,11 +2,14 @@
   "manifestVersion": 1,
   "id": "notification-hub",
   "publisher": "notification-hub-publisher",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "name": "Notification Hub",
   "description": "A centralized notification hub for Azure DevOps that aggregates @mentions, PR comments, and work item updates",
   "public": false,
-  "categories": ["Azure Boards", "Azure Repos"],
+  "categories": [
+    "Azure Boards",
+    "Azure Repos"
+  ],
   "targets": [
     {
       "id": "Microsoft.VisualStudio.Services"

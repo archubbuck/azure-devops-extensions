@@ -43,6 +43,7 @@ jobs:
         run: |
           echo "Automatically updating version based on git history..."
           node scripts/update-version.mjs
+          # Note: jq is pre-installed on GitHub Actions ubuntu-latest runners
           echo "Updated version: $(cat azure-devops-extension.json | jq -r '.version')"
       
       - name: Package and Publish to Azure DevOps

@@ -98,6 +98,6 @@ try {
   updateVersion();
   process.exit(0);
 } catch (error) {
-  console.error('Error updating version:', error);
+  console.error('Error updating version:', error.message);
   process.exit(1);
 }
