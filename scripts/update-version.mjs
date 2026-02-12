@@ -21,6 +21,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '..');
 
+// Maximum fallback version for timestamp-based versioning when git is unavailable
+// Limits to 4 digits (0-9999) to keep version numbers reasonable
+const MAX_FALLBACK_VERSION = 10000;
+
 function getGitCommitCount() {
   try {
     // Get commit count from the beginning of the repository
@@ -32,7 +36,8 @@ function getGitCommitCount() {
   } catch (error) {
     console.error('Warning: Could not get git commit count:', error.message);
     // Fallback to timestamp-based versioning if git is not available
-    return Math.floor(Date.now() / 1000) % 10000;
+    // Use modulo to keep version number reasonable (0-9999)
+    return Math.floor(Date.now() / 1000) % MAX_FALLBACK_VERSION;
   }
 }
 
@@ -45,9 +50,21 @@ function updateVersion() {
   
   // Parse current version
   const currentVersion = manifest.version;
+  if (!currentVersion || typeof currentVersion !== 'string') {
+    throw new Error('Invalid or missing version in azure-devops-extension.json');
+  }
+  
   const versionParts = currentVersion.split('.');
-  const major = parseInt(versionParts[0], 10) || 1;
-  const minor = parseInt(versionParts[1], 10) || 0;
+  if (versionParts.length < 2) {
+    throw new Error(`Invalid version format: ${currentVersion}. Expected MAJOR.MINOR.PATCH format.`);
+  }
+  
+  const major = parseInt(versionParts[0], 10);
+  const minor = parseInt(versionParts[1], 10);
+  
+  if (isNaN(major) || isNaN(minor)) {
+    throw new Error(`Invalid version numbers in: ${currentVersion}. Major and minor must be integers.`);
+  }
   
   // Calculate new patch version based on git commit count
   const commitCount = getGitCommitCount();
@@ -78,7 +95,7 @@ function updateVersion() {
 
 // Run the update
 try {
-  const newVersion = updateVersion();
+  updateVersion();
   process.exit(0);
 } catch (error) {
   console.error('Error updating version:', error);
