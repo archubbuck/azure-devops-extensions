@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Notification Hub Action</title>
+    <script src="https://cdn.jsdelivr.net/npm/azure-devops-extension-sdk@4.2.0/dist/SDK.min.js"></script>
+  </head>
+  <body>
+    <script>
+      // Initialize the SDK and open the panel
+      SDK.init().then(function() {
+        SDK.ready().then(function() {
+          console.log('[Notification Hub Action] Opening panel...');
+          
+          // Get the host page layout service
+          SDK.getService("ms.vss-features.host-page-layout-service").then(function(layoutService) {
+            // Open the panel using the full contribution ID
+            // Format: publisher.extension-id.contribution-id
+            layoutService.openPanel("notification-hub-publisher.notification-hub.notification-hub-panel", {
+              title: "Notifications",
+              size: 1 // PanelSize.Medium
+            });
+            console.log('[Notification Hub Action] Panel opened successfully');
+          }).catch(function(error) {
+            console.error('[Notification Hub Action] Failed to open panel:', error);
+          });
+        });
+      }).catch(function(error) {
+        console.error('[Notification Hub Action] Failed to initialize SDK:', error);
+      });
+    </script>
+  </body>
+</html>
