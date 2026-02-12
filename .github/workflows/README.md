@@ -2,6 +2,8 @@
 
 This directory contains GitHub Actions workflows for continuous integration and deployment of Azure DevOps extensions.
 
+**Note**: This configuration is set up for the `archubbuck` organization. If you're using a different organization, you'll need to update the `ORGANIZATION_NAME` environment variable in `.github/workflows/cd.yml` and replace references to `archubbuck` throughout this documentation with your organization name.
+
 ## Workflows
 
 ### CI Workflow (`ci.yml`)
@@ -49,7 +51,8 @@ Before the workflows can publish extensions, you need to configure secrets in yo
 1. **`AZURE_DEVOPS_PAT`** (Required for publishing)
    - Personal Access Token from Azure DevOps
    - Must have **Marketplace (publish)** scope
-   - Create at: https://dev.azure.com/archubbuck/_usersSettings/tokens
+   - Create at: https://dev.azure.com/{your-organization}/_usersSettings/tokens
+   - For this repository: https://dev.azure.com/archubbuck/_usersSettings/tokens
 
 2. **`PUBLISHER_ID`** (Optional but recommended)
    - Your Azure DevOps Marketplace publisher ID
@@ -77,7 +80,7 @@ If you don't have a publisher account:
 
 ### Creating a Personal Access Token (PAT)
 
-1. Go to https://dev.azure.com/archubbuck/_usersSettings/tokens
+1. Go to https://dev.azure.com/{your-organization}/_usersSettings/tokens (e.g., https://dev.azure.com/archubbuck/_usersSettings/tokens)
 2. Click **New Token**
 3. Configure the token:
    - Name: `GitHub Actions Extension Publisher`
@@ -102,10 +105,10 @@ Once secrets are configured:
    - Builds the extension
    - Creates a .vsix package
    - Publishes to Azure DevOps marketplace
-   - Shares with the `archubbuck` organization
+   - Shares with the configured organization (default: `archubbuck`)
 
 3. **Install the extension**:
-   - Go to https://dev.azure.com/archubbuck/_settings/extensions
+   - Go to https://dev.azure.com/{your-organization}/_settings/extensions (e.g., https://dev.azure.com/archubbuck/_settings/extensions)
    - Find your extension in the list
    - Click **Install** to add it to your organization
 
@@ -157,8 +160,8 @@ To publish an update:
 ### Extension doesn't appear in Azure DevOps
 
 - Check the workflow run summary for the installation link
-- Verify the extension is shared with the `archubbuck` organization
-- Go to https://dev.azure.com/archubbuck/_settings/extensions
+- Verify the extension is shared with your organization (check the `ORGANIZATION_NAME` in the workflow)
+- Go to https://dev.azure.com/{your-organization}/_settings/extensions
 - You may need to refresh the page or wait a few minutes
 
 ### Build fails during CI
@@ -180,7 +183,7 @@ To publish an update:
 
 Monitor your extensions at:
 - **Marketplace Management**: https://marketplace.visualstudio.com/manage
-- **Organization Extensions**: https://dev.azure.com/archubbuck/_settings/extensions
+- **Organization Extensions**: https://dev.azure.com/{your-organization}/_settings/extensions
 
 ## Security Notes
 

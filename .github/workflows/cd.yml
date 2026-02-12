@@ -28,10 +28,7 @@ jobs:
       - name: Install TFX CLI
         run: npm install -g tfx-cli
       
-      - name: Create extension package
-        run: tfx extension create --manifest-globs azure-devops-extension.json --output-path ./output
-      
-      - name: Publish to Azure DevOps
+      - name: Package and Publish to Azure DevOps
         env:
           AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
           PUBLISHER_ID: ${{ secrets.PUBLISHER_ID }}
