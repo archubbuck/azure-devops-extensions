@@ -7,8 +7,8 @@ describe('App', () => {
     expect(baseElement).toBeTruthy();
   });
 
-  it('should have the notification hub title', () => {
+  it('should have the notification panel title', () => {
     render(<App />);
-    expect(screen.getByText('Notification Hub')).toBeTruthy();
+    expect(screen.getByText('Notifications')).toBeTruthy();
   });
 });
