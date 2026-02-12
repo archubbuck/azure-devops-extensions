@@ -13,17 +13,27 @@ import {
 } from 'azure-devops-extension-api/Git';
 import { Notification, NotificationType } from '../types/notification';
 
+const log = (message: string, data?: unknown) => {
+  console.log(`[NotificationService] ${message}`, data || '');
+};
+
+const error = (message: string, err?: unknown) => {
+  console.error(`[NotificationService ERROR] ${message}`, err || '');
+};
+
 export class NotificationService {
   private static instance: NotificationService;
   private notifications: Notification[] = [];
 
   private constructor() {
+    log('Initializing NotificationService');
     // Load saved notification state from localStorage
     this.loadFromLocalStorage();
   }
 
   public static getInstance(): NotificationService {
     if (!NotificationService.instance) {
+      log('Creating NotificationService singleton instance');
       NotificationService.instance = new NotificationService();
     }
     return NotificationService.instance;
@@ -31,18 +41,24 @@ export class NotificationService {
 
   public async fetchNotifications(): Promise<Notification[]> {
     try {
+      log('Starting to fetch notifications');
       const projectService = await SDK.getService<IProjectPageService>('ms.vss-tfs-web.tfs-page-data-service');
       const project = await projectService.getProject();
       
       if (!project) {
+        log('No project found, returning empty notifications');
         return [];
       }
+
+      log(`Fetching notifications for project: ${project.name} (${project.id})`);
 
       const [mentions, prComments, workItemUpdates] = await Promise.all([
         this.fetchMentions(project.id, project.name),
         this.fetchPRComments(project.id, project.name),
         this.fetchWorkItemUpdates(project.id, project.name),
       ]);
+
+      log(`Fetched ${mentions.length} mentions, ${prComments.length} PR comments, ${workItemUpdates.length} work item updates`);
 
       // Preserve existing read/unread state by id
       const existingReadState = new Map(this.notifications.map(n => [n.id, n.read]));
@@ -63,27 +79,34 @@ export class NotificationService {
         (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
       );
 
+      log(`Merged and sorted ${this.notifications.length} total notifications`);
+      this.saveToLocalStorage();
+
       return this.notifications;
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
+    } catch (err) {
+      error('Error fetching notifications', err);
       return [];
     }
   }
 
   private async fetchMentions(projectId: string, projectName: string): Promise<Notification[]> {
     try {
+      log(`Fetching mentions for project ${projectName}`);
       const witClient = getClient(WorkItemTrackingRestClient);
       const currentUser = SDK.getUser();
       
       // Sanitize display name for WIQL: escape quotes and remove potentially problematic characters
       const displayName = (currentUser.displayName || '').trim();
       if (!displayName) {
+        log('No display name found for current user, skipping mentions');
         return [];
       }
       
       const mentionToken = `@${displayName}`;
       // Escape single quotes for WIQL and remove square brackets which are WIQL field delimiters
       const escapedMentionToken = mentionToken.replace(/'/g, "''").replace(/[[\]]/g, '');
+      
+      log(`Querying mentions with token: ${mentionToken}`);
       
       // Query for work items where the user is mentioned
       const wiql = {
@@ -93,9 +116,11 @@ export class NotificationService {
       const queryResult = await witClient.queryByWiql(wiql, { project: projectId });
       
       if (!queryResult.workItems || queryResult.workItems.length === 0) {
+        log('No mentions found');
         return [];
       }
 
+      log(`Found ${queryResult.workItems.length} work items with mentions`);
       const workItemIds = queryResult.workItems.slice(0, 20).map(wi => wi.id as number);
       const workItems = await witClient.getWorkItems(workItemIds, undefined, undefined, WorkItemExpand.All);
 
@@ -115,19 +140,21 @@ export class NotificationService {
           imageUrl: wi.fields?.['System.ChangedBy']?.imageUrl,
         },
       }));
-    } catch (error) {
-      console.error('Error fetching mentions:', error);
+    } catch (err) {
+      error('Error fetching mentions', err);
       return [];
     }
   }
 
   private async fetchPRComments(projectId: string, projectName: string): Promise<Notification[]> {
     try {
+      log(`Fetching PR comments for project ${projectName}`);
       const gitClient = getClient(GitRestClient);
       const currentUser = SDK.getUser();
       
       // Get repositories in the project
       const repos = await gitClient.getRepositories(projectId);
+      log(`Found ${repos.length} repositories`);
       const allComments: Notification[] = [];
 
       // Get pull requests for each repository (limit to recent)
@@ -176,24 +203,26 @@ export class NotificationService {
                   });
                 }
               }
-            } catch (error) {
-              console.error(`Error fetching PR threads for PR ${pr.pullRequestId}:`, error);
+            } catch (err) {
+              error(`Error fetching PR threads for PR ${pr.pullRequestId}`, err);
             }
           }
-        } catch (error) {
-          console.error(`Error fetching PRs for repo ${repo.name}:`, error);
+        } catch (err) {
+          error(`Error fetching PRs for repo ${repo.name}`, err);
         }
       }
 
+      log(`Fetched ${allComments.length} PR comments`);
       return allComments;
-    } catch (error) {
-      console.error('Error fetching PR comments:', error);
+    } catch (err) {
+      error('Error fetching PR comments', err);
       return [];
     }
   }
 
   private async fetchWorkItemUpdates(projectId: string, projectName: string): Promise<Notification[]> {
     try {
+      log(`Fetching work item updates for project ${projectName}`);
       const witClient = getClient(WorkItemTrackingRestClient);
       const currentUser = SDK.getUser();
       
@@ -205,9 +234,11 @@ export class NotificationService {
       const queryResult = await witClient.queryByWiql(wiql, { project: projectId });
       
       if (!queryResult.workItems || queryResult.workItems.length === 0) {
+        log('No work item updates found');
         return [];
       }
 
+      log(`Found ${queryResult.workItems.length} work item updates`);
       const workItemIds = queryResult.workItems.slice(0, 20).map(wi => wi.id as number);
       const workItems = await witClient.getWorkItems(workItemIds, undefined, undefined, WorkItemExpand.All);
 
@@ -241,9 +272,10 @@ export class NotificationService {
         });
       }
 
+      log(`Processed ${notifications.length} work item update notifications`);
       return notifications;
-    } catch (error) {
-      console.error('Error fetching work item updates:', error);
+    } catch (err) {
+      error('Error fetching work item updates', err);
       return [];
     }
   }
@@ -272,8 +304,9 @@ export class NotificationService {
   private saveToLocalStorage(): void {
     try {
       localStorage.setItem('notifications', JSON.stringify(this.notifications));
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
+      log(`Saved ${this.notifications.length} notifications to localStorage`);
+    } catch (err) {
+      error('Error saving to localStorage', err);
     }
   }
 
@@ -286,9 +319,12 @@ export class NotificationService {
           ...n,
           timestamp: new Date(n.timestamp),
         }));
+        log(`Loaded ${this.notifications.length} notifications from localStorage`);
+      } else {
+        log('No notifications found in localStorage');
       }
-    } catch (error) {
-      console.error('Error loading from localStorage:', error);
+    } catch (err) {
+      error('Error loading from localStorage', err);
     }
   }
 }
