@@ -77,7 +77,6 @@ jobs:
             
             # Use tfx extension publish with retry logic to handle transient timeout errors
             MAX_RETRIES=3
-            RETRY_DELAY=30
             ATTEMPT=1
             
             while [ $ATTEMPT -le $MAX_RETRIES ]; do
@@ -93,10 +92,13 @@ jobs:
                 break
               else
                 EXIT_CODE=$?
+                echo "⚠️  Publish attempt $ATTEMPT failed with exit code $EXIT_CODE"
+                
                 if [ $ATTEMPT -lt $MAX_RETRIES ]; then
-                  echo "⚠️  Publish attempt $ATTEMPT failed with exit code $EXIT_CODE"
-                  echo "⏳ Waiting $RETRY_DELAY seconds before retry..."
-                  sleep $RETRY_DELAY
+                  # Calculate exponential backoff delay: 30s for retry 1, 60s for retry 2
+                  DELAY=$((30 * (2 ** ($ATTEMPT - 1))))
+                  echo "⏳ Waiting $DELAY seconds before retry..."
+                  sleep $DELAY
                   ATTEMPT=$((ATTEMPT + 1))
                 else
                   echo "❌ All $MAX_RETRIES publish attempts failed"
