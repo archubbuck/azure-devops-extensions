@@ -36,10 +36,18 @@ jobs:
       - name: Verify build output
         run: |
           if [ ! -d "apps/notification-hub/dist" ] || [ -z "$(ls -A apps/notification-hub/dist)" ]; then
-            echo "Build verification failed: dist folder is missing or empty."
+            echo "❌ Build verification failed: dist folder is missing or empty."
             exit 1
           fi
-          echo "Build output verified successfully"
+          echo "✅ Build output verified successfully"
+          echo ""
+          echo "📦 Build artifacts:"
+          ls -lh apps/notification-hub/dist/
+          if [ -d "apps/notification-hub/dist/assets" ]; then
+            echo ""
+            echo "📁 Assets folder:"
+            ls -lh apps/notification-hub/dist/assets/
+          fi
       
       - name: Update version automatically
         run: |
@@ -66,13 +74,38 @@ jobs:
           # Check if AZURE_DEVOPS_PAT is set and not empty
           if [ -n "$AZURE_DEVOPS_PAT" ]; then
             echo "Publishing extension to marketplace and sharing with $ORGANIZATION_NAME"
-            # Use tfx extension publish which packages and publishes in one step
-            tfx extension publish \
-              --manifest-globs azure-devops-extension.json \
-              --share-with $ORGANIZATION_NAME \
-              --token $AZURE_DEVOPS_PAT \
-              --output-path ./output \
-              --no-prompt
+            
+            # Use tfx extension publish with retry logic to handle transient timeout errors
+            MAX_RETRIES=3
+            ATTEMPT=1
+            
+            while [ $ATTEMPT -le $MAX_RETRIES ]; do
+              echo "📤 Publish attempt $ATTEMPT of $MAX_RETRIES..."
+              
+              if tfx extension publish \
+                --manifest-globs azure-devops-extension.json \
+                --share-with $ORGANIZATION_NAME \
+                --token $AZURE_DEVOPS_PAT \
+                --output-path ./output \
+                --no-prompt; then
+                echo "✅ Extension published successfully!"
+                break
+              else
+                EXIT_CODE=$?
+                echo "⚠️  Publish attempt $ATTEMPT failed with exit code $EXIT_CODE"
+                
+                if [ $ATTEMPT -lt $MAX_RETRIES ]; then
+                  # Calculate exponential backoff delay: 30s for retry 1, 60s for retry 2
+                  DELAY=$((30 * (2 ** ($ATTEMPT - 1))))
+                  echo "⏳ Waiting $DELAY seconds before retry..."
+                  sleep $DELAY
+                  ATTEMPT=$((ATTEMPT + 1))
+                else
+                  echo "❌ All $MAX_RETRIES publish attempts failed"
+                  exit $EXIT_CODE
+                fi
+              fi
+            done
           else
             echo "Warning: AZURE_DEVOPS_PAT not set. Creating package only."
             echo "Extension package will be created but not published."

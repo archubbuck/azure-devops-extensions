@@ -68,6 +68,16 @@ npm run build
 # The built files will be in apps/notification-hub/dist/
 ```
 
+**Build Output**: The build process uses Nx with Vite to create an optimized production bundle in `apps/notification-hub/dist/`:
+- `index.html` - Main HTML entry point
+- `assets/` - JavaScript and CSS bundles
+- `favicon.ico` - Extension icon
+
+The build is configured in:
+- `apps/notification-hub/vite.config.mts` - Vite build configuration
+- `package.json` - Build script that runs: `npx nx build @notification-hub/notification-hub`
+- `azure-devops-extension.json` - Extension manifest that references the dist folder
+
 ### CI/CD Pipeline
 
 This repository includes automated CI/CD workflows:
