@@ -54,9 +54,9 @@ Before the workflows can publish extensions, you need to configure secrets in yo
    - Create at: https://dev.azure.com/{your-organization}/_usersSettings/tokens
    - For this repository: https://dev.azure.com/archubbuck/_usersSettings/tokens
 
-2. **`PUBLISHER_ID`** (Optional but recommended)
+2. **`PUBLISHER_ID`** (Optional)
    - Your Azure DevOps Marketplace publisher ID
-   - If not provided, uses the publisher ID in `azure-devops-extension.json`
+   - The workflow always uses the publisher ID from `azure-devops-extension.json`; setting this secret overrides that value during the manifest update step
    - Create/find at: https://marketplace.visualstudio.com/manage
 
 ### Setting Up Secrets
