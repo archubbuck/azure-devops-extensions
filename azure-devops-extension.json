@@ -1,0 +1,57 @@
+{
+  "manifestVersion": 1,
+  "id": "notification-hub",
+  "publisher": "notification-hub-publisher",
+  "version": "1.0.0",
+  "name": "Notification Hub",
+  "description": "A centralized notification hub for Azure DevOps that aggregates @mentions, PR comments, and work item updates",
+  "public": false,
+  "categories": ["Azure Boards", "Azure Repos"],
+  "targets": [
+    {
+      "id": "Microsoft.VisualStudio.Services"
+    }
+  ],
+  "icons": {
+    "default": "apps/notification-hub/public/favicon.ico"
+  },
+  "contributions": [
+    {
+      "id": "notification-hub-panel",
+      "type": "ms.vss-web.panel",
+      "description": "Notification Hub side panel",
+      "targets": [],
+      "properties": {
+        "name": "Notification Hub",
+        "uri": "apps/notification-hub/dist/index.html",
+        "height": "100%",
+        "width": "400px"
+      }
+    },
+    {
+      "id": "notification-hub-header-action",
+      "type": "ms.vss-web.action",
+      "description": "Notification Hub bell icon in the header",
+      "targets": [
+        "ms.vss-web.global-header-toolbar-right"
+      ],
+      "properties": {
+        "name": "Notifications",
+        "iconName": "Ringer",
+        "uri": "apps/notification-hub/dist/index.html",
+        "command": "notification-hub.openPanel"
+      }
+    }
+  ],
+  "scopes": [
+    "vso.work",
+    "vso.code",
+    "vso.notification"
+  ],
+  "files": [
+    {
+      "path": "apps/notification-hub/dist",
+      "addressable": true
+    }
+  ]
+}
