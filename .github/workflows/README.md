@@ -124,24 +124,55 @@ You can also trigger deployment manually:
 
 ## Extension Versioning
 
-The extension version is defined in `azure-devops-extension.json`:
+The extension uses **automatic versioning** to prevent version conflicts during publishing.
 
-```json
-{
-  "version": "1.0.0",
-  ...
-}
+### Versioning Strategy
+
+**Format**: `MAJOR.MINOR.PATCH` (semantic versioning)
+
+- **MAJOR.MINOR**: Manually controlled in `azure-devops-extension.json`
+- **PATCH**: Automatically generated based on git commit count during CD workflow
+
+### How It Works
+
+The CD workflow automatically updates the version before publishing:
+
+1. Reads the current `MAJOR.MINOR` from `azure-devops-extension.json`
+2. Calculates `PATCH` version using `git rev-list --count HEAD`
+3. Updates manifest with new version (e.g., `1.0.5`)
+4. Packages and publishes with the new version
+
+This ensures:
+- Each deployment has a unique version number
+- No manual version bumping required
+- Prevents "Version number must increase" errors from Azure DevOps marketplace
+
+### Manual Version Updates
+
+To manually update the version locally:
+
+```bash
+npm run update-version
 ```
 
-To publish an update:
+### Incrementing Major or Minor Version
 
-1. Increment the version number following [semantic versioning](https://semver.org/):
-   - **Major** (1.0.0 → 2.0.0): Breaking changes
-   - **Minor** (1.0.0 → 1.1.0): New features (backward compatible)
-   - **Patch** (1.0.0 → 1.0.1): Bug fixes
+To release a new major or minor version:
 
-2. Commit and push to `main` branch
-3. The CD workflow will automatically publish the new version
+1. Update the version in `azure-devops-extension.json`:
+   ```json
+   {
+     "version": "2.0.0",
+     ...
+   }
+   ```
+   
+2. Follow [semantic versioning](https://semver.org/):
+   - **Major** (1.0.x → 2.0.0): Breaking changes
+   - **Minor** (1.0.x → 1.1.0): New features (backward compatible)
+
+3. Commit and push to `main` branch
+4. The CD workflow will automatically set the patch version and publish (e.g., `2.0.15`)
 
 ## Troubleshooting
 
