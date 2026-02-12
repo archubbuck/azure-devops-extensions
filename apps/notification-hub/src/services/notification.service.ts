@@ -47,12 +47,17 @@ export class NotificationService {
       // Preserve existing read/unread state by id
       const existingReadState = new Map(this.notifications.map(n => [n.id, n.read]));
 
-      const mergedNotifications = [...mentions, ...prComments, ...workItemUpdates].map(notification => {
+      // Efficiently merge notifications
+      const allNotifications = mentions.concat(prComments, workItemUpdates);
+      const mergedNotifications = new Array(allNotifications.length);
+      
+      for (let i = 0; i < allNotifications.length; i++) {
+        const notification = allNotifications[i];
         const existingRead = existingReadState.get(notification.id);
-        return existingRead !== undefined
+        mergedNotifications[i] = existingRead !== undefined
           ? { ...notification, read: existingRead }
           : notification;
-      });
+      }
 
       this.notifications = mergedNotifications.sort(
         (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
@@ -70,8 +75,15 @@ export class NotificationService {
       const witClient = getClient(WorkItemTrackingRestClient);
       const currentUser = SDK.getUser();
       
-      const mentionToken = `@${(currentUser.displayName || '').trim()}`;
-      const escapedMentionToken = mentionToken.replace(/'/g, "''");
+      // Sanitize display name for WIQL: escape quotes and remove potentially problematic characters
+      const displayName = (currentUser.displayName || '').trim();
+      if (!displayName) {
+        return [];
+      }
+      
+      const mentionToken = `@${displayName}`;
+      // Escape single quotes for WIQL and remove square brackets which are WIQL field delimiters
+      const escapedMentionToken = mentionToken.replace(/'/g, "''").replace(/[[\]]/g, '');
       
       // Query for work items where the user is mentioned
       const wiql = {
