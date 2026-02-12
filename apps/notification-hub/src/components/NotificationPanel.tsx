@@ -63,14 +63,10 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
   if (!isOpen) return null;
 
   return (
-    <div className="notification-panel-overlay" onClick={onClose}>
-      <div className="notification-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="panel-header">
-          <h2>Notifications</h2>
-          <button className="close-button" onClick={onClose} aria-label="Close">
-            ✕
-          </button>
-        </div>
+    <div className="notification-panel">
+      <div className="panel-header">
+        <h2>Notifications</h2>
+      </div>
 
         <div className="panel-actions">
           <button 
@@ -145,7 +141,6 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
             />
           ))}
         </div>
-      </div>
     </div>
   );
 };

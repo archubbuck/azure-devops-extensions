@@ -7,31 +7,41 @@
   </head>
   <body>
     <script>
-      // Initialize the SDK and open the panel
+      // Initialize the SDK and register the action handler
       SDK.init({ loaded: true, applyTheme: true }).then(function() {
-        SDK.ready().then(function() {
-          console.log('[Notification Hub Action] Opening panel...');
-          
-          // Derive the panel contribution ID from the extension context
-          var extensionContext = SDK.getExtensionContext();
-          var panelContributionId = extensionContext.id + ".notification-hub-panel";
-          
-          console.log('[Notification Hub Action] Panel ID: ' + panelContributionId);
-          
-          // Get the host page layout service
-          SDK.getService("ms.vss-features.host-page-layout-service").then(function(layoutService) {
-            // Open the panel using the dynamically derived contribution ID
-            layoutService.openPanel(panelContributionId, {
-              title: "Notifications",
-              size: 1 // PanelSize.Medium (enum value)
+        console.log('[Notification Hub Action] SDK initialized');
+        
+        // Create the action handler object
+        var actionHandler = {
+          execute: function(actionContext) {
+            console.log('[Notification Hub Action] Action executed, opening panel...');
+            
+            // Derive the panel contribution ID from the extension context
+            var extensionContext = SDK.getExtensionContext();
+            var panelContributionId = extensionContext.id + ".notification-hub-panel";
+            
+            console.log('[Notification Hub Action] Panel ID: ' + panelContributionId);
+            
+            // Get the host page layout service and open the panel
+            SDK.getService("ms.vss-features.host-page-layout-service").then(function(layoutService) {
+              layoutService.openPanel(panelContributionId, {
+                title: "Notifications",
+                size: 1 // PanelSize.Medium (enum value)
+              }).then(function() {
+                console.log('[Notification Hub Action] Panel opened successfully');
+              }).catch(function(error) {
+                console.error('[Notification Hub Action] Failed to open panel:', error);
+              });
+            }).catch(function(error) {
+              console.error('[Notification Hub Action] Failed to get layout service:', error);
             });
-            console.log('[Notification Hub Action] Panel opened successfully');
-            SDK.notifyLoadSucceeded();
-          }).catch(function(error) {
-            console.error('[Notification Hub Action] Failed to open panel:', error);
-            SDK.notifyLoadFailed('Failed to open panel: ' + error.message);
-          });
-        });
+          }
+        };
+        
+        // Register the action handler with the SDK
+        SDK.register(SDK.getContributionId(), actionHandler);
+        console.log('[Notification Hub Action] Action handler registered');
+        SDK.notifyLoadSucceeded();
       }).catch(function(error) {
         console.error('[Notification Hub Action] Failed to initialize SDK:', error);
         SDK.notifyLoadFailed('Failed to initialize SDK: ' + error.message);
