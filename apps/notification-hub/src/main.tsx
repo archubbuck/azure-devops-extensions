@@ -16,7 +16,7 @@ log('Starting initialization...');
 
 // Initialize the Azure DevOps SDK
 SDK.init({
-  loaded: true, // Set to true to indicate extension is ready to load
+  loaded: true, // Set to true to indicate extension has loaded successfully
   applyTheme: true,
 })
   .then(() => {
