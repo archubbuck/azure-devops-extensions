@@ -10,32 +10,32 @@ const log = (message: string, data?: unknown) => {
 export function App() {
   const notificationService = NotificationService.getInstance();
 
-  const updateNotifications = useCallback(async () => {
+  const refreshNotifications = useCallback(async () => {
     try {
-      log('Fetching notifications...');
+      log('Refreshing notifications...');
       await notificationService.fetchNotifications();
       const count = notificationService.getUnreadCount();
-      log(`Updated unread count: ${count}`);
+      log(`Notifications refreshed. Unread count: ${count}`);
     } catch (err) {
-      console.error('[Notification Hub App] Failed to update notifications', err);
+      console.error('[Notification Hub App] Failed to refresh notifications', err);
     }
   }, [notificationService]);
 
   useEffect(() => {
-    log('App mounted, starting notification updates');
-    // Load notifications and update unread count periodically
-    updateNotifications();
-    const interval = setInterval(updateNotifications, 60000); // Update every minute
+    log('App mounted, starting notification refresh');
+    // Load notifications initially and refresh periodically
+    refreshNotifications();
+    const interval = setInterval(refreshNotifications, 60000); // Refresh every minute
 
     return () => {
       log('App unmounting, clearing interval');
       clearInterval(interval);
     };
-  }, [updateNotifications]);
+  }, [refreshNotifications]);
 
   const handlePanelClose = () => {
-    // Refresh notifications when panel closes to update unread count
-    updateNotifications();
+    // Refresh notifications when panel closes
+    refreshNotifications();
   };
 
   // When loaded as a panel, render the panel content directly
