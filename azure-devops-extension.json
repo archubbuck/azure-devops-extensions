@@ -41,8 +41,7 @@
       "properties": {
         "name": "Notifications",
         "iconName": "Ringer",
-        "uri": "apps/notification-hub/dist/index.html",
-        "command": "notification-hub.openPanel"
+        "uri": "apps/notification-hub/dist/action.html"
       }
     }
   ],
