@@ -4,7 +4,22 @@
 
 The Notification Hub is an Azure DevOps extension that must be packaged and installed into Azure DevOps to function properly. It cannot run standalone as it depends on the Azure DevOps SDK and APIs.
 
-## Prerequisites
+## Automated Deployment (Recommended)
+
+This repository includes GitHub Actions workflows for automated CI/CD. When you push to the `main` branch, the extension is automatically built, packaged, and published to Azure DevOps.
+
+**Quick Setup**:
+1. Configure GitHub secrets (see [.github/workflows/README.md](.github/workflows/README.md))
+2. Push changes to `main` branch
+3. Extension automatically publishes to https://dev.azure.com/archubbuck/
+
+For detailed CI/CD setup instructions, see [.github/workflows/README.md](.github/workflows/README.md).
+
+## Manual Deployment
+
+If you need to deploy manually, follow these steps:
+
+### Prerequisites
 
 1. **TFX CLI**: Install the Azure DevOps extension packaging tool
    ```bash

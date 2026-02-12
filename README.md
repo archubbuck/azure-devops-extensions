@@ -24,7 +24,7 @@ A centralized notification hub for Azure DevOps that aggregates activity across 
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
+- Node.js (v20 or higher)
 - npm or yarn
 - Azure DevOps account (for testing the extension)
 
@@ -67,6 +67,18 @@ npm run build
 
 # The built files will be in apps/notification-hub/dist/
 ```
+
+### CI/CD Pipeline
+
+This repository includes automated CI/CD workflows:
+
+- **CI (Pull Requests)**: Automatically runs linting, tests, and builds on all PRs
+- **CD (Main Branch)**: Automatically publishes extension updates to https://dev.azure.com/archubbuck/
+
+To set up automated publishing:
+1. Configure required secrets in GitHub (see [.github/workflows/README.md](.github/workflows/README.md))
+2. Push changes to `main` branch
+3. Extension automatically publishes to Azure DevOps
 
 ### Extension Manifest
 

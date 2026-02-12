@@ -1,0 +1,101 @@
+name: CD - Publish Extension
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: read
+
+jobs:
+  publish-extension:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build extension
+        run: npm run build
+      
+      - name: Install TFX CLI
+        run: npm install -g tfx-cli
+      
+      - name: Verify build output
+        run: |
+          if [ ! -d "apps/notification-hub/dist" ] || [ -z "$(ls -A apps/notification-hub/dist)" ]; then
+            echo "Build verification failed: dist folder is missing or empty."
+            exit 1
+          fi
+          echo "Build output verified successfully"
+      
+      - name: Package and Publish to Azure DevOps
+        env:
+          AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+          PUBLISHER_ID: ${{ secrets.PUBLISHER_ID }}
+          ORGANIZATION_NAME: archubbuck
+        run: |
+          # Update publisher in manifest if PUBLISHER_ID is provided
+          if [ -n "$PUBLISHER_ID" ]; then
+            echo "Updating publisher ID to $PUBLISHER_ID"
+            # Create temp file with updated publisher
+            cat azure-devops-extension.json | \
+              jq --arg publisher "$PUBLISHER_ID" '.publisher = $publisher' > azure-devops-extension.tmp.json
+            mv azure-devops-extension.tmp.json azure-devops-extension.json
+          fi
+          
+          # Check if AZURE_DEVOPS_PAT is set and not empty
+          if [ -n "$AZURE_DEVOPS_PAT" ]; then
+            echo "Publishing extension to marketplace and sharing with $ORGANIZATION_NAME"
+            # Use tfx extension publish which packages and publishes in one step
+            tfx extension publish \
+              --manifest-globs azure-devops-extension.json \
+              --share-with $ORGANIZATION_NAME \
+              --token $AZURE_DEVOPS_PAT \
+              --output-path ./output \
+              --no-prompt
+          else
+            echo "Warning: AZURE_DEVOPS_PAT not set. Creating package only."
+            echo "Extension package will be created but not published."
+            # Create package only when PAT is not available
+            tfx extension create --manifest-globs azure-devops-extension.json --output-path ./output
+          fi
+      
+      - name: Upload VSIX artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-package
+          path: output/*.vsix
+          retention-days: 30
+      
+      - name: Create release info
+        if: always()
+        env:
+          AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+          ORGANIZATION_NAME: archubbuck
+        run: |
+          echo "Extension built and packaged successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Package Details" >> $GITHUB_STEP_SUMMARY
+          echo "- Organization: archubbuck" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: $(cat azure-devops-extension.json | jq -r '.version')" >> $GITHUB_STEP_SUMMARY
+          echo "- Extension ID: $(cat azure-devops-extension.json | jq -r '.id')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$AZURE_DEVOPS_PAT" ]; then
+            echo "✅ Extension published to marketplace" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Install at: https://dev.azure.com/$ORGANIZATION_NAME/_settings/extensions" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️  Extension package created but not published (PAT not configured)" >> $GITHUB_STEP_SUMMARY
+          fi
