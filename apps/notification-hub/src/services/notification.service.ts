@@ -8,7 +8,8 @@ import {
   WorkItemExpand 
 } from 'azure-devops-extension-api/WorkItemTracking';
 import { 
-  GitRestClient
+  GitRestClient,
+  PullRequestStatus
 } from 'azure-devops-extension-api/Git';
 import { Notification, NotificationType } from '../types/notification';
 
@@ -43,8 +44,19 @@ export class NotificationService {
         this.fetchWorkItemUpdates(project.id, project.name),
       ]);
 
-      this.notifications = [...mentions, ...prComments, ...workItemUpdates]
-        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      // Preserve existing read/unread state by id
+      const existingReadState = new Map(this.notifications.map(n => [n.id, n.read]));
+
+      const mergedNotifications = [...mentions, ...prComments, ...workItemUpdates].map(notification => {
+        const existingRead = existingReadState.get(notification.id);
+        return existingRead !== undefined
+          ? { ...notification, read: existingRead }
+          : notification;
+      });
+
+      this.notifications = mergedNotifications.sort(
+        (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+      );
 
       return this.notifications;
     } catch (error) {
@@ -58,9 +70,12 @@ export class NotificationService {
       const witClient = getClient(WorkItemTrackingRestClient);
       const currentUser = SDK.getUser();
       
+      const mentionToken = `@${(currentUser.displayName || '').trim()}`;
+      const escapedMentionToken = mentionToken.replace(/'/g, "''");
+      
       // Query for work items where the user is mentioned
       const wiql = {
-        query: `SELECT [System.Id] FROM WorkItems WHERE [System.History] CONTAINS '@${currentUser.displayName}' OR [System.Description] CONTAINS '@${currentUser.displayName}' ORDER BY [System.ChangedDate] DESC`
+        query: `SELECT [System.Id] FROM WorkItems WHERE [System.History] CONTAINS '${escapedMentionToken}' OR [System.Description] CONTAINS '${escapedMentionToken}' ORDER BY [System.ChangedDate] DESC`
       };
       
       const queryResult = await witClient.queryByWiql(wiql, { project: projectId });
@@ -108,7 +123,7 @@ export class NotificationService {
         try {
           const pullRequests = await gitClient.getPullRequests(
             repo.id as string,
-            { status: 4 }, // Active PRs
+            { status: PullRequestStatus.Active },
             projectId
           );
 

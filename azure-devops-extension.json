@@ -13,7 +13,7 @@
     }
   ],
   "icons": {
-    "default": "apps/notification-hub/public/favicon.ico"
+    "default": "apps/notification-hub/dist/favicon.ico"
   },
   "contributions": [
     {

@@ -3,10 +3,10 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "build": "nx build notification-hub",
-    "dev": "nx serve notification-hub",
-    "test": "nx test notification-hub",
-    "lint": "nx lint notification-hub"
+    "build": "npx nx build @notification-hub/notification-hub",
+    "dev": "npx nx serve @notification-hub/notification-hub",
+    "test": "npx nx test @notification-hub/notification-hub",
+    "lint": "npx nx lint @notification-hub/notification-hub"
   },
   "private": true,
   "dependencies": {

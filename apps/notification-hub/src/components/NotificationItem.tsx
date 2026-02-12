@@ -41,7 +41,14 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({ notification
       onMarkAsRead(notification.id);
     }
     if (notification.url) {
-      window.open(notification.url, '_blank');
+      window.open(notification.url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleClick();
     }
   };
 
@@ -49,6 +56,9 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({ notification
     <div 
       className={`notification-item ${!notification.read ? 'unread' : ''}`}
       onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
     >
       <div className="notification-icon">
         {getTypeIcon(notification.type)}

@@ -11,6 +11,11 @@
   background-color: #f5f5f5;
 }
 
+.notification-item:focus {
+  outline: 2px solid #0078d4;
+  outline-offset: -2px;
+}
+
 .notification-item.unread {
   background-color: #f0f6ff;
 }

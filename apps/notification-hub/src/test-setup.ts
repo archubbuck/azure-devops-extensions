@@ -29,5 +29,12 @@ vi.mock('azure-devops-extension-api/WorkItemTracking', () => ({
 }));
 
 vi.mock('azure-devops-extension-api/Git', () => ({
-  GitRestClient: vi.fn()
+  GitRestClient: vi.fn(),
+  PullRequestStatus: {
+    Active: 1,
+    Completed: 3,
+    Abandoned: 2,
+    All: 4,
+    NotSet: 0
+  }
 }));
