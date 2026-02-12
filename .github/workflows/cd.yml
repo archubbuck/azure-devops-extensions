@@ -5,6 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:  # Allow manual trigger
 
+permissions:
+  contents: read
+
 jobs:
   publish-extension:
     runs-on: ubuntu-latest
