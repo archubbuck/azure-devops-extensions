@@ -75,6 +75,21 @@ This repository includes automated CI/CD workflows:
 - **CI (Pull Requests)**: Automatically runs linting, tests, and builds on all PRs
 - **CD (Main Branch)**: Automatically publishes extension updates to https://dev.azure.com/archubbuck/
 
+#### Automatic Versioning
+
+The extension uses automatic versioning to prevent version conflicts during publishing:
+
+- **Format**: `MAJOR.MINOR.PATCH` (semantic versioning)
+- **MAJOR.MINOR**: Manually controlled in `azure-devops-extension.json`
+- **PATCH**: Auto-generated based on git commit count during CI/CD
+
+To manually update the version locally:
+```bash
+npm run update-version
+```
+
+The CD pipeline automatically updates the version before publishing, ensuring each deployment has a unique version number.
+
 To set up automated publishing:
 1. Configure required secrets in GitHub (see [.github/workflows/README.md](.github/workflows/README.md))
 2. Push changes to `main` branch

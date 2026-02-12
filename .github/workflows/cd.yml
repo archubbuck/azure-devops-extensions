@@ -39,6 +39,12 @@ jobs:
           fi
           echo "Build output verified successfully"
       
+      - name: Update version automatically
+        run: |
+          echo "Automatically updating version based on git history..."
+          node scripts/update-version.mjs
+          echo "Updated version: $(cat azure-devops-extension.json | jq -r '.version')"
+      
       - name: Package and Publish to Azure DevOps
         env:
           AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
