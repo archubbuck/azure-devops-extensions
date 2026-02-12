@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Notification, NotificationType } from '../types/notification';
 import { NotificationService } from '../services/notification.service';
 import NotificationItem from './NotificationItem';
@@ -16,17 +16,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
   const [filter, setFilter] = useState<'all' | 'unread' | NotificationType>('all');
   const notificationService = NotificationService.getInstance();
 
-  useEffect(() => {
-    if (isOpen) {
-      loadNotifications();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    applyFilter();
-  }, [notifications, filter]);
-
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     setLoading(true);
     try {
       const data = await notificationService.fetchNotifications();
@@ -36,9 +26,9 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
     } finally {
       setLoading(false);
     }
-  };
+  }, [notificationService]);
 
-  const applyFilter = () => {
+  const applyFilter = useCallback(() => {
     let filtered = [...notifications];
     
     if (filter === 'unread') {
@@ -48,7 +38,17 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
     }
     
     setFilteredNotifications(filtered);
-  };
+  }, [notifications, filter]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadNotifications();
+    }
+  }, [isOpen, loadNotifications]);
+
+  useEffect(() => {
+    applyFilter();
+  }, [applyFilter]);
 
   const handleMarkAsRead = (id: string) => {
     notificationService.markAsRead(id);
@@ -132,7 +132,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
           
           {!loading && filteredNotifications.length === 0 && (
             <div className="empty-state">
-              <p>📭</p>
+              <span role="img" aria-label="Empty mailbox" style={{ fontSize: '48px', marginBottom: '8px' }}>📭</span>
               <p>No notifications</p>
             </div>
           )}

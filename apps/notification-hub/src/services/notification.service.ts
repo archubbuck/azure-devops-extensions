@@ -8,8 +8,7 @@ import {
   WorkItemExpand 
 } from 'azure-devops-extension-api/WorkItemTracking';
 import { 
-  GitRestClient, 
-  GitPullRequestCommentThread 
+  GitRestClient
 } from 'azure-devops-extension-api/Git';
 import { Notification, NotificationType } from '../types/notification';
 
@@ -17,6 +16,7 @@ export class NotificationService {
   private static instance: NotificationService;
   private notifications: Notification[] = [];
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   private constructor() {}
 
   public static getInstance(): NotificationService {
@@ -67,7 +67,7 @@ export class NotificationService {
         return [];
       }
 
-      const workItemIds = queryResult.workItems.slice(0, 20).map(wi => wi.id!);
+      const workItemIds = queryResult.workItems.slice(0, 20).map(wi => wi.id as number);
       const workItems = await witClient.getWorkItems(workItemIds, undefined, undefined, WorkItemExpand.All);
 
       return workItems.map(wi => ({
@@ -105,7 +105,7 @@ export class NotificationService {
       for (const repo of repos.slice(0, 5)) {
         try {
           const pullRequests = await gitClient.getPullRequests(
-            repo.id!,
+            repo.id as string,
             { status: 4 }, // Active PRs
             projectId
           );
@@ -113,8 +113,8 @@ export class NotificationService {
           for (const pr of pullRequests.slice(0, 10)) {
             try {
               const threads = await gitClient.getThreads(
-                repo.id!,
-                pr.pullRequestId!,
+                repo.id as string,
+                pr.pullRequestId as number,
                 projectId
               );
 
@@ -126,13 +126,13 @@ export class NotificationService {
 
               for (const thread of relevantThreads) {
                 const lastComment = thread.comments?.[thread.comments.length - 1];
-                if (lastComment) {
+                if (lastComment && lastComment.publishedDate) {
                   allComments.push({
                     id: `pr-comment-${pr.pullRequestId}-${thread.id}`,
                     type: NotificationType.PullRequestComment,
                     title: `New comment on PR #${pr.pullRequestId}`,
                     description: pr.title || 'Pull Request',
-                    timestamp: new Date(lastComment.publishedDate!),
+                    timestamp: new Date(lastComment.publishedDate),
                     read: false,
                     url: `${pr.repository?.webUrl}/pullrequest/${pr.pullRequestId}`,
                     projectId,
@@ -179,14 +179,13 @@ export class NotificationService {
         return [];
       }
 
-      const workItemIds = queryResult.workItems.slice(0, 20).map(wi => wi.id!);
+      const workItemIds = queryResult.workItems.slice(0, 20).map(wi => wi.id as number);
       const workItems = await witClient.getWorkItems(workItemIds, undefined, undefined, WorkItemExpand.All);
 
       const notifications: Notification[] = [];
 
       for (const wi of workItems) {
         const changedBy = wi.fields?.['System.ChangedBy']?.displayName;
-        const assignedTo = wi.fields?.['System.AssignedTo']?.displayName;
         
         // Skip if the current user made the change
         if (changedBy === currentUser.displayName) {
@@ -253,6 +252,7 @@ export class NotificationService {
     try {
       const stored = localStorage.getItem('notifications');
       if (stored) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.notifications = JSON.parse(stored).map((n: any) => ({
           ...n,
           timestamp: new Date(n.timestamp),

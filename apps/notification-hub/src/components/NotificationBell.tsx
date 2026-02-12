@@ -1,5 +1,3 @@
-import { useState, useEffect } from 'react';
-import * as SDK from 'azure-devops-extension-sdk';
 import './NotificationBell.css';
 
 interface NotificationBellProps {

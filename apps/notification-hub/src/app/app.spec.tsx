@@ -1,28 +1,14 @@
-import { render } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-
+import { render, screen } from '@testing-library/react';
 import App from './app';
 
 describe('App', () => {
   it('should render successfully', () => {
-    const { baseElement } = render(
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>,
-    );
+    const { baseElement } = render(<App />);
     expect(baseElement).toBeTruthy();
   });
 
-  it('should have a greeting as the title', () => {
-    const { getAllByText } = render(
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>,
-    );
-    expect(
-      getAllByText(
-        new RegExp('Welcome @notification-hub/notification-hub', 'gi'),
-      ).length > 0,
-    ).toBeTruthy();
+  it('should have the notification hub title', () => {
+    render(<App />);
+    expect(screen.getByText('Notification Hub')).toBeTruthy();
   });
 });

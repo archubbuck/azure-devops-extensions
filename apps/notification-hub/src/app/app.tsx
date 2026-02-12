@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { NotificationService } from '../services/notification.service';
 import NotificationBell from '../components/NotificationBell';
 import NotificationPanel from '../components/NotificationPanel';
@@ -9,18 +9,18 @@ export function App() {
   const [unreadCount, setUnreadCount] = useState(0);
   const notificationService = NotificationService.getInstance();
 
+  const updateUnreadCount = useCallback(async () => {
+    await notificationService.fetchNotifications();
+    setUnreadCount(notificationService.getUnreadCount());
+  }, [notificationService]);
+
   useEffect(() => {
     // Load notifications and update unread count periodically
-    const updateUnreadCount = async () => {
-      await notificationService.fetchNotifications();
-      setUnreadCount(notificationService.getUnreadCount());
-    };
-
     updateUnreadCount();
     const interval = setInterval(updateUnreadCount, 60000); // Update every minute
 
     return () => clearInterval(interval);
-  }, []);
+  }, [updateUnreadCount]);
 
   const handleBellClick = () => {
     setIsPanelOpen(!isPanelOpen);
