@@ -40,7 +40,7 @@
       ],
       "properties": {
         "name": "Notifications",
-        "iconName": "Ringer",
+        "icon": "apps/notification-hub/dist/images/bell-icon.svg",
         "uri": "apps/notification-hub/dist/action.html"
       }
     }
