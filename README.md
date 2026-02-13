@@ -107,6 +107,25 @@ This repository includes automated CI/CD workflows that support multiple extensi
 - **CI (Pull Requests)**: Automatically runs linting, tests, and builds on all PRs
 - **CD (Main Branch)**: Automatically builds and publishes all extensions to https://dev.azure.com/archubbuck/
 
+#### Improved Deployment Patterns
+
+The deployment pipeline uses intelligent patterns to prevent failures and optimize publishing:
+
+**Key Features:**
+- 🔍 **Marketplace Version Detection**: Checks current published versions before deploying
+- ⏭️ **Conditional Publishing**: Skips extensions that are already up-to-date
+- 🔄 **Smart Retry Logic**: Distinguishes between retryable and non-retryable errors
+- 📊 **Enhanced Reporting**: Clear status for each extension (success/skipped/failed)
+
+**How it works:**
+1. Query Azure DevOps Marketplace for current versions
+2. Compare with local versions
+3. Only publish if local version is newer
+4. Skip unchanged extensions automatically
+5. Retry only on transient errors (network issues)
+
+For detailed information, see [Deployment Patterns Documentation](docs/DEPLOYMENT_PATTERNS.md).
+
 #### Automatic Versioning
 
 All extensions use automatic versioning to prevent version conflicts during publishing:
@@ -114,6 +133,8 @@ All extensions use automatic versioning to prevent version conflicts during publ
 - **Format**: `MAJOR.MINOR.PATCH` (semantic versioning)
 - **MAJOR.MINOR**: Manually controlled in each `azure-devops-extension-*.json` file
 - **PATCH**: Auto-generated based on git commit count during CI/CD
+- **Version Floor**: Ensures versions never decrease (uses `Math.max()`)
+- **Marketplace Sync**: Checks published version and bumps if needed
 
 To manually update versions for all extensions locally:
 ```bash
@@ -126,15 +147,15 @@ The CD pipeline automatically updates all extension versions before publishing, 
 
 When changes are pushed to the `main` branch:
 1. All extensions are built
-2. Versions are automatically updated based on git commit count
+2. Versions are automatically updated based on git commit count and marketplace check
 3. Each extension is packaged into a separate `.vsix` file
-4. All extensions are published to the Azure DevOps Marketplace
-5. Extensions are automatically shared with the `archubbuck` organization
+4. Extensions are conditionally published (only if version increased)
+5. Successful extensions are automatically shared with the `archubbuck` organization
 
 To set up automated publishing:
 1. Configure required secrets in GitHub (see [.github/workflows/README.md](.github/workflows/README.md))
 2. Push changes to `main` branch
-3. All extensions automatically publish to Azure DevOps
+3. Extensions automatically publish to Azure DevOps (if versions changed)
 
 ### Extension Manifests
 
