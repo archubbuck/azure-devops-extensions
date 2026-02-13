@@ -65,7 +65,8 @@ function getExtensionPaths(manifest) {
     for (const file of manifest.files) {
       if (file.path && typeof file.path === 'string') {
         // The manifest typically references dist directories (e.g., 'apps/notification-hub/dist')
-        // But git only tracks source files, so we need to track the parent directory instead
+        // These dist directories are build artifacts and not tracked in git (in .gitignore)
+        // For versioning, we need to track the source directory instead since that's what's committed
         // Extract the app directory path (e.g., 'apps/notification-hub/dist' -> 'apps/notification-hub/')
         const pathParts = file.path.split('/');
         if (pathParts.length >= 2 && pathParts[0] === 'apps') {
@@ -117,6 +118,8 @@ function updateManifestVersion(manifestPath) {
   
   // Calculate commit count based on changes to extension-specific paths
   // Use the maximum commit count across all paths to ensure we capture all relevant changes
+  // This approach ensures that any change to any part of the extension increments the version
+  // For example, if an extension has multiple file paths and any one changes, the version should increment
   let maxCommitCount = 0;
   const pathCommits = {};
   
