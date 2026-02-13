@@ -35,18 +35,18 @@ jobs:
       
       - name: Verify build output
         run: |
-          if [ ! -d "apps/notification-hub/dist" ] || [ -z "$(ls -A apps/notification-hub/dist)" ]; then
+          if [ ! -d "apps/hello-azure/dist" ] || [ -z "$(ls -A apps/hello-azure/dist)" ]; then
             echo "❌ Build verification failed: dist folder is missing or empty."
             exit 1
           fi
           echo "✅ Build output verified successfully"
           echo ""
           echo "📦 Build artifacts:"
-          ls -lh apps/notification-hub/dist/
-          if [ -d "apps/notification-hub/dist/assets" ]; then
+          ls -lh apps/hello-azure/dist/
+          if [ -d "apps/hello-azure/dist/assets" ]; then
             echo ""
             echo "📁 Assets folder:"
-            ls -lh apps/notification-hub/dist/assets/
+            ls -lh apps/hello-azure/dist/assets/
           fi
       
       - name: Update version automatically

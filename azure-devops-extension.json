@@ -1,14 +1,13 @@
 {
   "manifestVersion": 1,
-  "id": "notification-hub",
+  "id": "hello-azure",
   "publisher": "notification-hub-publisher",
-  "version": "1.1.0",
-  "name": "Notification Hub",
-  "description": "A centralized notification hub for Azure DevOps that aggregates @mentions, PR comments, and work item updates",
+  "version": "1.0.0",
+  "name": "Hello Azure DevOps",
+  "description": "A basic Azure DevOps extension for testing automated deployment",
   "public": false,
   "categories": [
-    "Azure Boards",
-    "Azure Repos"
+    "Azure Boards"
   ],
   "targets": [
     {
@@ -16,43 +15,26 @@
     }
   ],
   "icons": {
-    "default": "apps/notification-hub/dist/favicon.ico"
+    "default": "apps/hello-azure/dist/favicon.ico"
   },
   "contributions": [
     {
-      "id": "notification-hub-panel",
-      "type": "ms.vss-web.panel",
-      "description": "Notification Hub side panel",
-      "targets": [],
-      "properties": {
-        "name": "Notification Hub",
-        "uri": "apps/notification-hub/dist/index.html",
-        "height": "100%",
-        "width": "400px"
-      }
-    },
-    {
-      "id": "notification-hub-header-action",
-      "type": "ms.vss-web.action",
-      "description": "Notification Hub bell icon in the header",
+      "id": "hello-azure-hub",
+      "type": "ms.vss-web.hub",
+      "description": "Hello Azure DevOps hub",
       "targets": [
-        "ms.vss-web.global-header-toolbar-right"
+        "ms.vss-web.project-admin-hub-group"
       ],
       "properties": {
-        "name": "Notifications",
-        "icon": "apps/notification-hub/dist/images/bell-icon.png",
-        "uri": "apps/notification-hub/dist/action.html"
+        "name": "Hello Azure",
+        "uri": "apps/hello-azure/dist/index.html"
       }
     }
   ],
-  "scopes": [
-    "vso.work",
-    "vso.code",
-    "vso.notification"
-  ],
+  "scopes": [],
   "files": [
     {
-      "path": "apps/notification-hub/dist",
+      "path": "apps/hello-azure/dist",
       "addressable": true
     }
   ]
