@@ -8,8 +8,8 @@
     "build:hello-azure": "npx nx build @hello-azure/hello-azure",
     "dev": "npx nx serve @notification-hub/notification-hub",
     "dev:hello-azure": "npx nx serve @hello-azure/hello-azure",
-    "test": "npx nx test @notification-hub/notification-hub && npx nx test @hello-azure/hello-azure",
-    "lint": "npx nx lint @notification-hub/notification-hub && npx nx lint @hello-azure/hello-azure",
+    "test": "npx nx run-many --target=test --all",
+    "lint": "npx nx run-many --target=lint --all",
     "update-version": "node scripts/update-version.mjs"
   },
   "private": true,
