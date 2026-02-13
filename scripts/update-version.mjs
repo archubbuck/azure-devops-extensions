@@ -9,11 +9,14 @@
  * Versioning strategy:
  * - MAJOR.MINOR.PATCH format (semantic versioning)
  * - MAJOR.MINOR from manifest files (manually controlled)
- * - PATCH auto-incremented based on total git commit count from the start of the repository
+ * - PATCH auto-incremented based on per-extension git commit count
+ * 
+ * Each extension tracks commits to its specific directory (derived from manifest.files)
+ * and its manifest file to ensure independent versioning.
  */
 
 import { readFileSync, writeFileSync, readdirSync } from 'fs';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -25,10 +28,18 @@ const rootDir = join(__dirname, '..');
 // Limits to 4 digits (0-9999) to keep version numbers reasonable
 const MAX_FALLBACK_VERSION = 10000;
 
-function getGitCommitCount() {
+/**
+ * Get git commit count for specific paths
+ * @param {string[]} paths - Array of paths to track
+ * @returns {number} Number of commits affecting these paths
+ */
+function getGitCommitCount(paths) {
   try {
-    // Get commit count from the beginning of the repository
-    const count = execSync('git rev-list --count HEAD', { 
+    // Build git command args to count commits for specific paths
+    // Use union approach: count commits that touch ANY of the tracked paths
+    const args = ['rev-list', '--count', 'HEAD', '--', ...paths];
+    
+    const count = execFileSync('git', args, { 
       cwd: rootDir,
       encoding: 'utf8' 
     }).trim();
@@ -39,6 +50,40 @@ function getGitCommitCount() {
     // Use modulo to keep version number reasonable (0-9999)
     return Math.floor(Date.now() / 1000) % MAX_FALLBACK_VERSION;
   }
+}
+
+/**
+ * Extract tracked paths from manifest file
+ * Converts dist paths to source paths since dist is in .gitignore
+ * @param {object} manifest - Parsed manifest object
+ * @param {string} manifestPath - Path to manifest file
+ * @returns {string[]} Array of paths to track for versioning
+ */
+function getTrackedPaths(manifest, manifestPath) {
+  const trackedPaths = [];
+  
+  // Add the manifest file itself
+  trackedPaths.push(manifestPath);
+  
+  // Extract extension directories from files array
+  if (manifest.files && Array.isArray(manifest.files)) {
+    for (const file of manifest.files) {
+      if (file.path && file.addressable) {
+        // Convert dist path to source path (dist is in .gitignore)
+        // Example: apps/notification-hub/dist -> apps/notification-hub/
+        const distPath = file.path;
+        if (distPath.endsWith('/dist')) {
+          const sourcePath = distPath.slice(0, -5) + '/'; // Remove '/dist', add trailing slash
+          trackedPaths.push(sourcePath);
+        } else {
+          // If not a dist path, track it as-is
+          trackedPaths.push(file.path);
+        }
+      }
+    }
+  }
+  
+  return trackedPaths;
 }
 
 function updateManifestVersion(manifestPath) {
@@ -64,8 +109,11 @@ function updateManifestVersion(manifestPath) {
     throw new Error(`Invalid version numbers in: ${currentVersion}. Major and minor must be integers.`);
   }
   
-  // Calculate new patch version based on git commit count
-  const commitCount = getGitCommitCount();
+  // Get tracked paths for this extension
+  const trackedPaths = getTrackedPaths(manifest, manifestPath);
+  
+  // Calculate new patch version based on git commit count for this extension's paths
+  const commitCount = getGitCommitCount(trackedPaths);
   const patch = commitCount;
   
   // Generate new version
@@ -75,7 +123,8 @@ function updateManifestVersion(manifestPath) {
   console.log(`  Version: ${currentVersion} → ${newVersion}`);
   console.log(`  - Major: ${major} (from manifest)`);
   console.log(`  - Minor: ${minor} (from manifest)`);
-  console.log(`  - Patch: ${patch} (git commit count)`);
+  console.log(`  - Patch: ${patch} (git commit count for extension)`);
+  console.log(`  - Tracked paths: ${trackedPaths.join(', ')}`);
   
   // Update manifest with new version
   manifest.version = newVersion;
