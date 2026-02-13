@@ -24,7 +24,7 @@
  */
 
 import { readFileSync, writeFileSync, readdirSync } from 'fs';
-import { execFileSync, execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 

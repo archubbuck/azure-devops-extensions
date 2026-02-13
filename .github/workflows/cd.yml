@@ -144,7 +144,7 @@ jobs:
               echo "⏭️  Skipping publish: Extension is already up-to-date in marketplace"
               # Still create the package for artifacts
               tfx extension create --manifest-globs "$MANIFEST" --output-path ./output
-              return 0
+              return 2  # Return 2 to indicate "skipped" (different from success 0 and failure 1/255)
             fi
             
             echo ""
@@ -222,15 +222,18 @@ jobs:
           for MANIFEST in $MANIFEST_FILES; do
             EXTENSION_NAME=$(cat "$MANIFEST" | jq -r '.name')
             
-            if publish_extension "$MANIFEST"; then
+            publish_extension "$MANIFEST"
+            EXIT_CODE=$?
+            
+            if [ $EXIT_CODE -eq 0 ]; then
+              # Successfully published
               SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+            elif [ $EXIT_CODE -eq 2 ]; then
+              # Skipped (already up-to-date)
+              SKIPPED_EXTENSIONS="${SKIPPED_EXTENSIONS}${EXTENSION_NAME}, "
             else
-              EXIT_CODE=$?
-              if [ $EXIT_CODE -eq 0 ]; then
-                SKIPPED_EXTENSIONS="${SKIPPED_EXTENSIONS}${EXTENSION_NAME}, "
-              else
-                FAILED_EXTENSIONS="${FAILED_EXTENSIONS}${EXTENSION_NAME}, "
-              fi
+              # Failed
+              FAILED_EXTENSIONS="${FAILED_EXTENSIONS}${EXTENSION_NAME}, "
             fi
             echo ""
           done

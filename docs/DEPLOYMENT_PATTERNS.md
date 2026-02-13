@@ -99,13 +99,35 @@ This prevents unnecessary publishes and reduces marketplace API load.
     AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
     PUBLISHER_ID: ${{ secrets.PUBLISHER_ID }}
   run: |
-    # Check marketplace version
-    if needs_publish "$MANIFEST"; then
-      # Publish with smart retry logic
+    # Function to check if extension needs publishing
+    needs_publish() {
+      local MANIFEST=$1
+      if node scripts/check-marketplace-version.mjs --manifest "$MANIFEST" --publisher "$PUBLISHER_ID"; then
+        return 0  # Needs publish
+      else
+        return 1  # Skip publish
+      fi
+    }
+    
+    # Function to publish extension
+    publish_extension() {
+      local MANIFEST=$1
+      
+      # Check marketplace version
+      if ! needs_publish "$MANIFEST"; then
+        echo "⏭️  Skipping: already up-to-date"
+        return 2  # Skipped
+      else
+        # Publish with smart retry logic
+        tfx extension publish --manifest-globs "$MANIFEST"
+        return $?
+      fi
+    }
+    
+    # Process all extensions
+    for MANIFEST in $MANIFEST_FILES; do
       publish_extension "$MANIFEST"
-    else
-      echo "⏭️  Skipping: already up-to-date"
-    fi
+    done
 ```
 
 ## Benefits
