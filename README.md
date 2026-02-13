@@ -4,9 +4,9 @@ This repository is an Nx-powered monorepo engineered to develop and scale multip
 
 ## Project Overview
 
-This monorepo currently contains:
+This monorepo currently contains two extensions:
 
-### The Notification Hub
+### 1. Notification Hub
 
 A centralized notification hub for Azure DevOps that aggregates activity across your projects.
 
@@ -19,6 +19,18 @@ A centralized notification hub for Azure DevOps that aggregates activity across 
 - ✅ **Mark as Read**: Mark individual or all notifications as read
 - 🔍 **Filters**: Filter notifications by type (All, Unread, Mentions, PRs, Work Items)
 - 🔗 **Deep Links**: Click any notification to navigate directly to the artifact
+
+### 2. Hello Azure DevOps
+
+A basic Azure DevOps extension that demonstrates automated deployment via CI/CD pipeline.
+
+**Features:**
+- 👋 **Simple Hub**: A clean welcome page accessible from the project admin hub group
+- 📋 **User Information**: Displays current user and host information
+- ✓ **Deployment Status**: Shows extension version and deployment status
+- 🎨 **Modern UI**: Clean, gradient-based design with responsive layout
+
+This extension serves as a minimal example following Azure DevOps best practices and can be used as a template for creating new extensions.
 
 ## Getting Started
 
@@ -42,75 +54,98 @@ npm install
 ### Development
 
 ```bash
-# Start the development server (note: extension requires Azure DevOps context to run)
-npm run dev
-
-# Build the project
+# Build all extensions
 npm run build
 
-# Run linting
+# Build individual extensions
+npm run build:notification-hub
+npm run build:hello-azure
+
+# Start development server for notification-hub (default)
+npm run dev
+
+# Start development server for hello-azure
+npm run dev:hello-azure
+
+# Run linting for all extensions
 npm run lint
 
-# Run tests
+# Run tests for all extensions
 npm run test
 ```
 
-**Note**: The extension cannot run standalone in a browser because it requires the Azure DevOps SDK context. See [DEPLOYMENT.md](./DEPLOYMENT.md) for instructions on packaging and testing the extension in Azure DevOps.
+**Note**: Extensions cannot run standalone in a browser because they require the Azure DevOps SDK context. See [DEPLOYMENT.md](./DEPLOYMENT.md) for instructions on packaging and testing the extensions in Azure DevOps.
 
-### Building the Extension
+### Building the Extensions
 
-The Notification Hub can be built and packaged as an Azure DevOps extension:
+All extensions can be built and packaged as Azure DevOps extensions:
 
 ```bash
-# Build the application
+# Build all extensions
 npm run build
 
-# The built files will be in apps/notification-hub/dist/
+# The built files will be in:
+# - apps/notification-hub/dist/
+# - apps/hello-azure/dist/
 ```
 
-**Build Output**: The build process uses Nx with Vite to create an optimized production bundle in `apps/notification-hub/dist/`:
+**Build Output**: The build process uses Nx with Vite to create optimized production bundles:
 - `index.html` - Main HTML entry point
 - `assets/` - JavaScript and CSS bundles
 - `favicon.ico` - Extension icon
+- `SDK.min.js` - Azure DevOps SDK (bundled locally to avoid CSP issues)
 
 The build is configured in:
-- `apps/notification-hub/vite.config.mts` - Vite build configuration
-- `package.json` - Build script that runs: `npx nx build @notification-hub/notification-hub`
-- `azure-devops-extension.json` - Extension manifest that references the dist folder
+- `apps/*/vite.config.mts` - Vite build configuration for each extension
+- `package.json` - Build scripts for all extensions
+- `azure-devops-extension-*.json` - Extension manifests that reference the dist folders
 
 ### CI/CD Pipeline
 
-This repository includes automated CI/CD workflows:
+This repository includes automated CI/CD workflows that support multiple extensions:
 
 - **CI (Pull Requests)**: Automatically runs linting, tests, and builds on all PRs
-- **CD (Main Branch)**: Automatically publishes extension updates to https://dev.azure.com/archubbuck/
+- **CD (Main Branch)**: Automatically builds and publishes all extensions to https://dev.azure.com/archubbuck/
 
 #### Automatic Versioning
 
-The extension uses automatic versioning to prevent version conflicts during publishing:
+All extensions use automatic versioning to prevent version conflicts during publishing:
 
 - **Format**: `MAJOR.MINOR.PATCH` (semantic versioning)
-- **MAJOR.MINOR**: Manually controlled in `azure-devops-extension.json`
+- **MAJOR.MINOR**: Manually controlled in each `azure-devops-extension-*.json` file
 - **PATCH**: Auto-generated based on git commit count during CI/CD
 
-To manually update the version locally:
+To manually update versions for all extensions locally:
 ```bash
 npm run update-version
 ```
 
-The CD pipeline automatically updates the version before publishing, ensuring each deployment has a unique version number.
+The CD pipeline automatically updates all extension versions before publishing, ensuring each deployment has unique version numbers.
+
+#### Multi-Extension Deployment
+
+When changes are pushed to the `main` branch:
+1. All extensions are built
+2. Versions are automatically updated based on git commit count
+3. Each extension is packaged into a separate `.vsix` file
+4. All extensions are published to the Azure DevOps Marketplace
+5. Extensions are automatically shared with the `archubbuck` organization
 
 To set up automated publishing:
 1. Configure required secrets in GitHub (see [.github/workflows/README.md](.github/workflows/README.md))
 2. Push changes to `main` branch
-3. Extension automatically publishes to Azure DevOps
+3. All extensions automatically publish to Azure DevOps
 
-### Extension Manifest
+### Extension Manifests
 
-The extension manifest is located at `azure-devops-extension.json`. This file defines:
+Each extension has its own manifest file:
+- `azure-devops-extension-notification-hub.json` - Notification Hub extension
+- `azure-devops-extension-hello-azure.json` - Hello Azure DevOps extension
+
+These files define:
 - Extension metadata (name, description, version)
-- Contributions (header action, panel)
-- Required scopes (work items, code, notifications)
+- Contributions (hubs, actions, panels, etc.)
+- Required scopes
 - File paths for deployment
 
 For detailed instructions on packaging and deploying the extension, see [DEPLOYMENT.md](./DEPLOYMENT.md).
@@ -120,60 +155,36 @@ For detailed instructions on packaging and deploying the extension, see [DEPLOYM
 ```
 azure-devops-extensions/
 ├── apps/
-│   └── notification-hub/          # The Notification Hub React app
-│       ├── src/
-│       │   ├── app/                # Main app component
-│       │   ├── components/         # React components
-│       │   │   ├── NotificationBell.tsx
-│       │   │   ├── NotificationItem.tsx
-│       │   │   └── NotificationPanel.tsx
-│       │   ├── services/           # API services
-│       │   │   └── notification.service.ts
-│       │   ├── types/              # TypeScript types
-│       │   │   └── notification.ts
-│       │   ├── main.tsx            # Entry point with SDK initialization
-│       │   └── styles.css          # Global styles
-│       ├── public/                 # Static assets
-│       └── dist/                   # Built output
-├── azure-devops-extension.json    # Extension manifest
-├── nx.json                        # Nx configuration
-└── package.json                   # Root package.json
+│   ├── hello-azure/                # Hello Azure DevOps extension
+│   │   ├── src/
+│   │   │   ├── app/                # Main app component
+│   │   │   │   ├── app.tsx         # App component
+│   │   │   │   └── app.css         # App styles
+│   │   │   ├── main.tsx            # Entry point with SDK initialization
+│   │   │   └── styles.css          # Global styles
+│   │   ├── public/                 # Static assets
+│   │   │   ├── SDK.min.js          # Azure DevOps SDK
+│   │   │   └── favicon.ico         # Extension icon
+│   │   ├── vite.config.mts         # Vite configuration
+│   │   └── dist/                   # Built output (ignored by git)
+│   └── notification-hub/           # Legacy notification hub app
+├── azure-devops-extension.json     # Extension manifest
+├── nx.json                         # Nx configuration
+└── package.json                    # Root package.json
 ```
 
-## Notification Hub Architecture
+## Extension Architecture
 
-### Components
+### Hello Azure DevOps Extension
 
-1. **NotificationBell**: A bell icon component with badge count displayed in the header
-2. **NotificationPanel**: A side panel that slides in from the right showing all notifications
-3. **NotificationItem**: Individual notification card with metadata and actions
+A simple hub contribution that demonstrates:
+- Azure DevOps SDK initialization with proper logging
+- User and host information retrieval
+- Extension context access
+- Clean React component structure
+- Modern styling with CSS
 
-### Services
-
-- **NotificationService**: Singleton service that:
-  - Fetches notifications from Azure DevOps REST APIs
-  - Aggregates @mentions from work items
-  - Collects PR comments where user is mentioned
-  - Tracks work item updates (assignments, state changes)
-  - Manages read/unread state with localStorage
-  - Provides filtering capabilities
-
-### Azure DevOps SDK Integration
-
-The extension uses `azure-devops-extension-sdk` to:
-- Initialize and authenticate with Azure DevOps
-- Access REST API clients for Work Item Tracking and Git
-- Apply Azure DevOps theme to the UI
-- Navigate to artifacts via deep links
-
-### Data Flow
-
-1. App initializes and SDK authenticates
-2. NotificationService fetches data from multiple sources in parallel
-3. Notifications are aggregated, sorted by timestamp
-4. UI components display notifications with filters
-5. User interactions (mark as read, click) update state
-6. State persists to localStorage for offline access
+The extension is configured as a hub contribution in the project admin hub group, making it accessible from the project settings area in Azure DevOps.
 
 ## Technology Stack
 

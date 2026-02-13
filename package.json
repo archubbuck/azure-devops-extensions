@@ -3,10 +3,13 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "build": "npx nx build @notification-hub/notification-hub",
+    "build": "npm run build:notification-hub && npm run build:hello-azure",
+    "build:notification-hub": "npx nx build @notification-hub/notification-hub",
+    "build:hello-azure": "npx nx build @hello-azure/hello-azure",
     "dev": "npx nx serve @notification-hub/notification-hub",
-    "test": "npx nx test @notification-hub/notification-hub",
-    "lint": "npx nx lint @notification-hub/notification-hub",
+    "dev:hello-azure": "npx nx serve @hello-azure/hello-azure",
+    "test": "npx nx run-many --target=test --all",
+    "lint": "npx nx run-many --target=lint --all",
     "update-version": "node scripts/update-version.mjs"
   },
   "private": true,

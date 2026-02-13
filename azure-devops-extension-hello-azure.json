@@ -1,0 +1,41 @@
+{
+  "manifestVersion": 1,
+  "id": "hello-azure",
+  "publisher": "notification-hub-publisher",
+  "version": "1.0.4",
+  "name": "Hello Azure DevOps",
+  "description": "A basic Azure DevOps extension for testing automated deployment",
+  "public": false,
+  "categories": [
+    "Azure Boards"
+  ],
+  "targets": [
+    {
+      "id": "Microsoft.VisualStudio.Services"
+    }
+  ],
+  "icons": {
+    "default": "apps/hello-azure/dist/favicon.ico"
+  },
+  "contributions": [
+    {
+      "id": "hello-azure-hub",
+      "type": "ms.vss-web.hub",
+      "description": "Hello Azure DevOps hub",
+      "targets": [
+        "ms.vss-web.project-admin-hub-group"
+      ],
+      "properties": {
+        "name": "Hello Azure",
+        "uri": "apps/hello-azure/dist/index.html"
+      }
+    }
+  ],
+  "scopes": [],
+  "files": [
+    {
+      "path": "apps/hello-azure/dist",
+      "addressable": true
+    }
+  ]
+}
