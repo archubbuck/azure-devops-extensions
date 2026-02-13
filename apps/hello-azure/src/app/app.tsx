@@ -39,7 +39,12 @@ export function App() {
   return (
     <div className="app-container">
       <div className="content">
-        <h1>👋 Hello, {userName}!</h1>
+        <h1>
+          <span role="img" aria-label="waving hand">
+            👋
+          </span>{' '}
+          Hello, {userName}!
+        </h1>
         <p className="subtitle">Welcome to {hostName}</p>
         <div className="info-card">
           <h2>Extension Information</h2>
