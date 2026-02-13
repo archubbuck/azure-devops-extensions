@@ -211,11 +211,11 @@ function main() {
     console.log(JSON.stringify(result, null, 2));
     
     // Exit with appropriate code
-    // 0 = needs publish, 1 = skip publish, 2 = error
+    // 0 = needs publish, 1 = skip publish
     process.exit(result.needsPublish ? 0 : 1);
   } catch (error) {
     console.error('\nError checking extension:', error.message);
-    process.exit(2);
+    process.exit(2);  // 2 = error occurred
   }
 }
 

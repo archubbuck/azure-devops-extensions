@@ -229,10 +229,10 @@ jobs:
               # Successfully published
               SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
             elif [ $EXIT_CODE -eq 2 ]; then
-              # Skipped (already up-to-date)
+              # Skipped (already up-to-date) - return code 2 from publish_extension
               SKIPPED_EXTENSIONS="${SKIPPED_EXTENSIONS}${EXTENSION_NAME}, "
             else
-              # Failed
+              # Failed - 255 for non-retryable errors, other non-zero for retriable failures
               FAILED_EXTENSIONS="${FAILED_EXTENSIONS}${EXTENSION_NAME}, "
             fi
             echo ""
