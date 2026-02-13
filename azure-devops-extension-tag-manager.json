@@ -2,8 +2,9 @@
   "manifestVersion": 1,
   "id": "tag-manager",
   "publisher": "notification-hub-publisher",
-  "version": "1.0.4",
-  "name": "Work Item Tag Manager",
+  "version": "1.0.5",
+  "name": "better-tag-manager",
+  "displayName": "Better Tag Manager",
   "description": "A modern user interface for managing work item tags in Azure DevOps",
   "public": false,
   "categories": [
