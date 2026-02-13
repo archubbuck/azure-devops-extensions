@@ -4,9 +4,23 @@ This repository is an Nx-powered monorepo engineered to develop and scale multip
 
 ## Project Overview
 
-This monorepo currently contains:
+This monorepo currently contains two extensions:
 
-### Hello Azure DevOps
+### 1. Notification Hub
+
+A centralized notification hub for Azure DevOps that aggregates activity across your projects.
+
+**Features:**
+- 🔔 **Global Bell Icon**: Accessible from the Azure DevOps header with unread count badge
+- 📱 **Side Panel Activity Feed**: Slide-out panel displaying all your notifications
+- 💬 **@Mentions**: Get notified when someone mentions you in work items or pull requests
+- 🗨️ **PR Comments**: Track new comments on your pull requests
+- 📋 **Work Item Updates**: Stay informed about state changes and assignments
+- ✅ **Mark as Read**: Mark individual or all notifications as read
+- 🔍 **Filters**: Filter notifications by type (All, Unread, Mentions, PRs, Work Items)
+- 🔗 **Deep Links**: Click any notification to navigate directly to the artifact
+
+### 2. Hello Azure DevOps
 
 A basic Azure DevOps extension that demonstrates automated deployment via CI/CD pipeline.
 
@@ -40,76 +54,98 @@ npm install
 ### Development
 
 ```bash
-# Start the development server (note: extension requires Azure DevOps context to run)
-npm run dev
-
-# Build the project
+# Build all extensions
 npm run build
 
-# Run linting
+# Build individual extensions
+npm run build:notification-hub
+npm run build:hello-azure
+
+# Start development server for notification-hub (default)
+npm run dev
+
+# Start development server for hello-azure
+npm run dev:hello-azure
+
+# Run linting for all extensions
 npm run lint
 
-# Run tests
+# Run tests for all extensions
 npm run test
 ```
 
-**Note**: The extension cannot run standalone in a browser because it requires the Azure DevOps SDK context. See [DEPLOYMENT.md](./DEPLOYMENT.md) for instructions on packaging and testing the extension in Azure DevOps.
+**Note**: Extensions cannot run standalone in a browser because they require the Azure DevOps SDK context. See [DEPLOYMENT.md](./DEPLOYMENT.md) for instructions on packaging and testing the extensions in Azure DevOps.
 
-### Building the Extension
+### Building the Extensions
 
-The extension can be built and packaged as an Azure DevOps extension:
+All extensions can be built and packaged as Azure DevOps extensions:
 
 ```bash
-# Build the application
+# Build all extensions
 npm run build
 
-# The built files will be in apps/hello-azure/dist/
+# The built files will be in:
+# - apps/notification-hub/dist/
+# - apps/hello-azure/dist/
 ```
 
-**Build Output**: The build process uses Nx with Vite to create an optimized production bundle in `apps/hello-azure/dist/`:
+**Build Output**: The build process uses Nx with Vite to create optimized production bundles:
 - `index.html` - Main HTML entry point
 - `assets/` - JavaScript and CSS bundles
 - `favicon.ico` - Extension icon
 - `SDK.min.js` - Azure DevOps SDK (bundled locally to avoid CSP issues)
 
 The build is configured in:
-- `apps/hello-azure/vite.config.mts` - Vite build configuration
-- `package.json` - Build script that runs: `npx nx build @hello-azure/hello-azure`
-- `azure-devops-extension.json` - Extension manifest that references the dist folder
+- `apps/*/vite.config.mts` - Vite build configuration for each extension
+- `package.json` - Build scripts for all extensions
+- `azure-devops-extension-*.json` - Extension manifests that reference the dist folders
 
 ### CI/CD Pipeline
 
-This repository includes automated CI/CD workflows:
+This repository includes automated CI/CD workflows that support multiple extensions:
 
 - **CI (Pull Requests)**: Automatically runs linting, tests, and builds on all PRs
-- **CD (Main Branch)**: Automatically publishes extension updates to https://dev.azure.com/archubbuck/
+- **CD (Main Branch)**: Automatically builds and publishes all extensions to https://dev.azure.com/archubbuck/
 
 #### Automatic Versioning
 
-The extension uses automatic versioning to prevent version conflicts during publishing:
+All extensions use automatic versioning to prevent version conflicts during publishing:
 
 - **Format**: `MAJOR.MINOR.PATCH` (semantic versioning)
-- **MAJOR.MINOR**: Manually controlled in `azure-devops-extension.json`
+- **MAJOR.MINOR**: Manually controlled in each `azure-devops-extension-*.json` file
 - **PATCH**: Auto-generated based on git commit count during CI/CD
 
-To manually update the version locally:
+To manually update versions for all extensions locally:
 ```bash
 npm run update-version
 ```
 
-The CD pipeline automatically updates the version before publishing, ensuring each deployment has a unique version number.
+The CD pipeline automatically updates all extension versions before publishing, ensuring each deployment has unique version numbers.
+
+#### Multi-Extension Deployment
+
+When changes are pushed to the `main` branch:
+1. All extensions are built
+2. Versions are automatically updated based on git commit count
+3. Each extension is packaged into a separate `.vsix` file
+4. All extensions are published to the Azure DevOps Marketplace
+5. Extensions are automatically shared with the `archubbuck` organization
 
 To set up automated publishing:
 1. Configure required secrets in GitHub (see [.github/workflows/README.md](.github/workflows/README.md))
 2. Push changes to `main` branch
-3. Extension automatically publishes to Azure DevOps
+3. All extensions automatically publish to Azure DevOps
 
-### Extension Manifest
+### Extension Manifests
 
-The extension manifest is located at `azure-devops-extension.json`. This file defines:
+Each extension has its own manifest file:
+- `azure-devops-extension-notification-hub.json` - Notification Hub extension
+- `azure-devops-extension-hello-azure.json` - Hello Azure DevOps extension
+
+These files define:
 - Extension metadata (name, description, version)
-- Contributions (header action, panel)
-- Required scopes (work items, code, notifications)
+- Contributions (hubs, actions, panels, etc.)
+- Required scopes
 - File paths for deployment
 
 For detailed instructions on packaging and deploying the extension, see [DEPLOYMENT.md](./DEPLOYMENT.md).

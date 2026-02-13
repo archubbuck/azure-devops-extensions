@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Build extension
+      - name: Build extensions
         run: npm run build
       
       - name: Install TFX CLI
@@ -35,89 +35,149 @@ jobs:
       
       - name: Verify build output
         run: |
-          if [ ! -d "apps/hello-azure/dist" ] || [ -z "$(ls -A apps/hello-azure/dist)" ]; then
-            echo "❌ Build verification failed: dist folder is missing or empty."
+          echo "Verifying build output for all extensions..."
+          
+          # Check notification-hub
+          if [ ! -d "apps/notification-hub/dist" ] || [ -z "$(ls -A apps/notification-hub/dist)" ]; then
+            echo "❌ Build verification failed: notification-hub dist folder is missing or empty."
             exit 1
           fi
-          echo "✅ Build output verified successfully"
+          echo "✅ notification-hub build output verified"
+          
+          # Check hello-azure
+          if [ ! -d "apps/hello-azure/dist" ] || [ -z "$(ls -A apps/hello-azure/dist)" ]; then
+            echo "❌ Build verification failed: hello-azure dist folder is missing or empty."
+            exit 1
+          fi
+          echo "✅ hello-azure build output verified"
+          
           echo ""
           echo "📦 Build artifacts:"
+          echo ""
+          echo "notification-hub:"
+          ls -lh apps/notification-hub/dist/
+          echo ""
+          echo "hello-azure:"
           ls -lh apps/hello-azure/dist/
-          if [ -d "apps/hello-azure/dist/assets" ]; then
-            echo ""
-            echo "📁 Assets folder:"
-            ls -lh apps/hello-azure/dist/assets/
-          fi
       
-      - name: Update version automatically
+      - name: Update versions automatically
         run: |
-          echo "Automatically updating version based on git history..."
+          echo "Automatically updating versions for all extensions based on git history..."
           node scripts/update-version.mjs
-          # Note: jq is pre-installed on GitHub Actions ubuntu-latest runners
-          echo "Updated version: $(cat azure-devops-extension.json | jq -r '.version')"
       
-      - name: Package and Publish to Azure DevOps
+      - name: Package and Publish Extensions to Azure DevOps
         env:
           AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
           PUBLISHER_ID: ${{ secrets.PUBLISHER_ID }}
           ORGANIZATION_NAME: archubbuck
         run: |
-          # Update publisher in manifest if PUBLISHER_ID is provided
-          if [ -n "$PUBLISHER_ID" ]; then
-            echo "Updating publisher ID to $PUBLISHER_ID"
-            # Create temp file with updated publisher
-            cat azure-devops-extension.json | \
-              jq --arg publisher "$PUBLISHER_ID" '.publisher = $publisher' > azure-devops-extension.tmp.json
-            mv azure-devops-extension.tmp.json azure-devops-extension.json
+          # Find all extension manifest files
+          MANIFEST_FILES=$(ls azure-devops-extension-*.json)
+          
+          if [ -z "$MANIFEST_FILES" ]; then
+            echo "❌ No extension manifest files found"
+            exit 1
           fi
           
-          # Check if AZURE_DEVOPS_PAT is set and not empty
-          if [ -n "$AZURE_DEVOPS_PAT" ]; then
-            echo "Publishing extension to marketplace and sharing with $ORGANIZATION_NAME"
-            
-            # Use tfx extension publish with retry logic to handle transient timeout errors
-            MAX_RETRIES=3
-            ATTEMPT=1
-            
-            while [ $ATTEMPT -le $MAX_RETRIES ]; do
-              echo "📤 Publish attempt $ATTEMPT of $MAX_RETRIES..."
-              
-              if tfx extension publish \
-                --manifest-globs azure-devops-extension.json \
-                --share-with $ORGANIZATION_NAME \
-                --token $AZURE_DEVOPS_PAT \
-                --output-path ./output \
-                --no-prompt; then
-                echo "✅ Extension published successfully!"
-                break
-              else
-                EXIT_CODE=$?
-                echo "⚠️  Publish attempt $ATTEMPT failed with exit code $EXIT_CODE"
-                
-                if [ $ATTEMPT -lt $MAX_RETRIES ]; then
-                  # Calculate exponential backoff delay: 30s for retry 1, 60s for retry 2
-                  DELAY=$((30 * (2 ** ($ATTEMPT - 1))))
-                  echo "⏳ Waiting $DELAY seconds before retry..."
-                  sleep $DELAY
-                  ATTEMPT=$((ATTEMPT + 1))
-                else
-                  echo "❌ All $MAX_RETRIES publish attempts failed"
-                  exit $EXIT_CODE
-                fi
-              fi
+          echo "Found extension manifests:"
+          echo "$MANIFEST_FILES"
+          echo ""
+          
+          # Update publisher in all manifests if PUBLISHER_ID is provided
+          if [ -n "$PUBLISHER_ID" ]; then
+            echo "Updating publisher ID to $PUBLISHER_ID in all manifests..."
+            for MANIFEST in $MANIFEST_FILES; do
+              cat "$MANIFEST" | \
+                jq --arg publisher "$PUBLISHER_ID" '.publisher = $publisher' > "${MANIFEST}.tmp"
+              mv "${MANIFEST}.tmp" "$MANIFEST"
+              echo "  ✓ Updated $MANIFEST"
             done
+            echo ""
+          fi
+          
+          # Function to publish or package an extension with retry logic
+          publish_extension() {
+            local MANIFEST=$1
+            local EXTENSION_NAME=$(cat "$MANIFEST" | jq -r '.name')
+            local EXTENSION_VERSION=$(cat "$MANIFEST" | jq -r '.version')
+            
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "📦 Processing: $EXTENSION_NAME (v$EXTENSION_VERSION)"
+            echo "   Manifest: $MANIFEST"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            
+            if [ -n "$AZURE_DEVOPS_PAT" ]; then
+              echo "Publishing to marketplace and sharing with $ORGANIZATION_NAME..."
+              
+              # Use tfx extension publish with retry logic
+              MAX_RETRIES=3
+              ATTEMPT=1
+              
+              while [ $ATTEMPT -le $MAX_RETRIES ]; do
+                echo "📤 Publish attempt $ATTEMPT of $MAX_RETRIES..."
+                
+                if tfx extension publish \
+                  --manifest-globs "$MANIFEST" \
+                  --share-with $ORGANIZATION_NAME \
+                  --token $AZURE_DEVOPS_PAT \
+                  --output-path ./output \
+                  --no-prompt; then
+                  echo "✅ $EXTENSION_NAME published successfully!"
+                  return 0
+                else
+                  EXIT_CODE=$?
+                  echo "⚠️  Publish attempt $ATTEMPT failed with exit code $EXIT_CODE"
+                  
+                  if [ $ATTEMPT -lt $MAX_RETRIES ]; then
+                    DELAY=$((30 * (2 ** ($ATTEMPT - 1))))
+                    echo "⏳ Waiting $DELAY seconds before retry..."
+                    sleep $DELAY
+                    ATTEMPT=$((ATTEMPT + 1))
+                  else
+                    echo "❌ All $MAX_RETRIES publish attempts failed for $EXTENSION_NAME"
+                    return $EXIT_CODE
+                  fi
+                fi
+              done
+            else
+              echo "Creating package only (AZURE_DEVOPS_PAT not set)..."
+              tfx extension create --manifest-globs "$MANIFEST" --output-path ./output
+              echo "✅ $EXTENSION_NAME package created"
+            fi
+          }
+          
+          # Process each extension
+          FAILED_EXTENSIONS=""
+          SUCCESS_COUNT=0
+          
+          for MANIFEST in $MANIFEST_FILES; do
+            if publish_extension "$MANIFEST"; then
+              SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+            else
+              EXTENSION_NAME=$(cat "$MANIFEST" | jq -r '.name')
+              FAILED_EXTENSIONS="${FAILED_EXTENSIONS}${EXTENSION_NAME}, "
+            fi
+            echo ""
+          done
+          
+          # Summary
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📊 Summary"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ Successful: $SUCCESS_COUNT"
+          
+          if [ -n "$FAILED_EXTENSIONS" ]; then
+            echo "❌ Failed: ${FAILED_EXTENSIONS%, }"
+            exit 1
           else
-            echo "Warning: AZURE_DEVOPS_PAT not set. Creating package only."
-            echo "Extension package will be created but not published."
-            # Create package only when PAT is not available
-            tfx extension create --manifest-globs azure-devops-extension.json --output-path ./output
+            echo "🎉 All extensions processed successfully!"
           fi
       
-      - name: Upload VSIX artifact
+      - name: Upload VSIX artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: extension-package
+          name: extension-packages
           path: output/*.vsix
           retention-days: 30
       
@@ -127,17 +187,31 @@ jobs:
           AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
           ORGANIZATION_NAME: archubbuck
         run: |
-          echo "Extension built and packaged successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "# Extension Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Package Details" >> $GITHUB_STEP_SUMMARY
-          echo "- Organization: archubbuck" >> $GITHUB_STEP_SUMMARY
-          echo "- Version: $(cat azure-devops-extension.json | jq -r '.version')" >> $GITHUB_STEP_SUMMARY
-          echo "- Extension ID: $(cat azure-devops-extension.json | jq -r '.id')" >> $GITHUB_STEP_SUMMARY
+          echo "## Published Extensions" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # List all extension manifests and their details
+          MANIFEST_FILES=$(ls azure-devops-extension-*.json)
+          for MANIFEST in $MANIFEST_FILES; do
+            EXTENSION_NAME=$(cat "$MANIFEST" | jq -r '.name')
+            EXTENSION_ID=$(cat "$MANIFEST" | jq -r '.id')
+            EXTENSION_VERSION=$(cat "$MANIFEST" | jq -r '.version')
+            
+            echo "### $EXTENSION_NAME" >> $GITHUB_STEP_SUMMARY
+            echo "- **Extension ID**: $EXTENSION_ID" >> $GITHUB_STEP_SUMMARY
+            echo "- **Version**: $EXTENSION_VERSION" >> $GITHUB_STEP_SUMMARY
+            echo "- **Manifest**: \`$MANIFEST\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          done
+          
+          echo "## Deployment Status" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ -n "$AZURE_DEVOPS_PAT" ]; then
-            echo "✅ Extension published to marketplace" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Extensions published to Azure DevOps Marketplace" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Install at: https://dev.azure.com/$ORGANIZATION_NAME/_settings/extensions" >> $GITHUB_STEP_SUMMARY
+            echo "**Install at**: https://dev.azure.com/$ORGANIZATION_NAME/_settings/extensions" >> $GITHUB_STEP_SUMMARY
           else
-            echo "⚠️  Extension package created but not published (PAT not configured)" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️  Extension packages created but not published (PAT not configured)" >> $GITHUB_STEP_SUMMARY
           fi
