@@ -24,7 +24,7 @@
  */
 
 import { readFileSync, writeFileSync, readdirSync } from 'fs';
-import { execFileSync } from 'child_process';
+import { execFileSync, execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -68,7 +68,51 @@ function getExtensionPaths(manifest) {
   return Array.from(paths);
 }
 
-function updateManifestVersion(manifestPath) {
+/**
+ * Get current published version from marketplace
+ * @param {string} publisherId - The publisher ID
+ * @param {string} extensionId - The extension ID
+ * @returns {string|null} Current published version or null if not published
+ */
+function getMarketplaceVersion(publisherId, extensionId) {
+  if (!publisherId) {
+    return null; // Cannot query without publisher ID
+  }
+  
+  try {
+    // Use tfx extension show to get current marketplace version
+    const output = execSync(
+      `tfx extension show --publisher ${publisherId} --extension-id ${extensionId} --json`,
+      { 
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      }
+    );
+    
+    const data = JSON.parse(output);
+    const version = data?.versions?.[0]?.version || null;
+    return version;
+  } catch (error) {
+    // Extension not found or other error - this is expected for new extensions
+    return null;
+  }
+}
+
+/**
+ * Parse a semantic version string into parts
+ * @param {string} version - Version string (e.g., "1.0.5")
+ * @returns {object} Object with major, minor, patch numbers
+ */
+function parseVersion(version) {
+  const parts = version.split('.').map(Number);
+  return {
+    major: parts[0] || 0,
+    minor: parts[1] || 0,
+    patch: parts[2] || 0
+  };
+}
+
+function updateManifestVersion(manifestPath, publisherId = null) {
   // Read the current manifest
   const manifestContent = readFileSync(manifestPath, 'utf8');
   const manifest = JSON.parse(manifestContent);
@@ -130,7 +174,29 @@ function updateManifestVersion(manifestPath) {
   // Prevent version downgrades by ensuring patch version never decreases
   // This is critical when switching versioning strategies or when the manifest
   // already contains a higher version (e.g., from previous full-repo commit counting)
-  const patch = Math.max(commitCount, currentPatch);
+  let patch = Math.max(commitCount, currentPatch);
+  
+  // Also check marketplace version to ensure we're always higher
+  const extensionId = manifest.id;
+  const marketplaceVersion = getMarketplaceVersion(publisherId, extensionId);
+  
+  if (marketplaceVersion) {
+    const marketplaceParsed = parseVersion(marketplaceVersion);
+    console.log(`  Marketplace version: ${marketplaceVersion} (patch: ${marketplaceParsed.patch})`);
+    
+    // Ensure our version is higher than marketplace
+    // If major.minor matches, patch must be higher
+    if (major === marketplaceParsed.major && minor === marketplaceParsed.minor) {
+      if (patch <= marketplaceParsed.patch) {
+        patch = marketplaceParsed.patch + 1;
+        console.log(`  ⚠️  Bumping patch to ${patch} to exceed marketplace version`);
+      }
+    }
+    // If major.minor is different, version comparison is more complex
+    // but we trust the major.minor from manifest (manually controlled)
+  } else {
+    console.log(`  Marketplace version: Not published yet (new extension)`);
+  }
   
   // Generate new version
   const newVersion = `${major}.${minor}.${patch}`;
@@ -161,6 +227,16 @@ function updateManifestVersion(manifestPath) {
 }
 
 function updateAllVersions() {
+  // Get publisher ID from environment if available
+  const publisherId = process.env.PUBLISHER_ID || null;
+  
+  if (publisherId) {
+    console.log(`Using publisher ID: ${publisherId} for marketplace version checks`);
+  } else {
+    console.log(`No PUBLISHER_ID set - skipping marketplace version checks`);
+  }
+  console.log('');
+  
   // Find all azure-devops-extension-*.json files
   const files = readdirSync(rootDir);
   const manifestFiles = files.filter(file => 
@@ -179,7 +255,7 @@ function updateAllVersions() {
   for (const file of manifestFiles) {
     const manifestPath = join(rootDir, file);
     try {
-      const newVersion = updateManifestVersion(manifestPath);
+      const newVersion = updateManifestVersion(manifestPath, publisherId);
       updatedVersions[file] = newVersion;
     } catch (error) {
       console.error(`Error updating ${file}:`, error.message);
