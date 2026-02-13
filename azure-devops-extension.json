@@ -40,7 +40,7 @@
       ],
       "properties": {
         "name": "Notifications",
-        "icon": "apps/notification-hub/dist/images/bell-icon.svg",
+        "icon": "apps/notification-hub/dist/images/bell-icon.png",
         "uri": "apps/notification-hub/dist/action.html"
       }
     }
