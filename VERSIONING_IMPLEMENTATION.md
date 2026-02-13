@@ -106,18 +106,18 @@ Result after commit:
 
 ## Testing
 
-### Automated Tests
+### Manual Testing Procedures
 
-A comprehensive test script validates the implementation:
+The implementation was verified through manual testing scenarios:
 
 ```bash
-# Create test scenarios
+# Test scenarios executed:
 1. Initial state: Both extensions have correct commit counts
 2. Modify notification-hub only: Only notification-hub version increments
 3. Modify hello-azure only: Only hello-azure version increments
 ```
 
-All tests pass, confirming:
+Manual verification confirmed:
 - ✅ Affected extensions get version increments
 - ✅ Unaffected extensions maintain their versions
 - ✅ Version tracking is accurate per extension

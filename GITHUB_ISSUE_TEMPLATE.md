@@ -2,16 +2,12 @@
 
 ## NOTE: Implementation Already Complete! ✅
 
-This issue was resolved in PR #[INSERT_PR_NUMBER_HERE]. The implementation is complete and tested.
-However, per the task requirements, this document provides the issue content for manual GitHub issue creation.
+This issue was resolved in this pull request. The implementation is complete and tested.
+However, per the task requirements, this document provides the issue content for reference.
 
-## To create this issue on GitHub (for documentation purposes):
+## Issue Content (for reference only):
 
-1. Go to: https://github.com/archubbuck/azure-devops-extensions/issues/new
-2. Copy the content below
-3. Note in the issue that it has been implemented in PR #[INSERT_PR_NUMBER_HERE]
-
----
+The implementation in this PR addresses the following requirements:
 
 ## Issue Title
 Set up versioning at the extension level so code changes only increment the version for affected extensions
@@ -77,23 +73,23 @@ Modify `scripts/update-version.mjs` to:
 
 **This issue has been fully implemented and tested.**
 
-See PR #[INSERT_PR_NUMBER_HERE] for the complete implementation including:
+This pull request includes:
 - Updated versioning script with per-extension tracking
-- Comprehensive test suite (all tests passing)
+- Manual test verification procedures
 - Full documentation
-- Code review and security checks completed
+- Security improvements (using execFileSync instead of execSync)
 
-The implementation is ready for use - no further action required on this issue.
+The implementation is ready for use.
 
 ---
 
 ## Implementation Reference
 
-The implementation has been completed in PR #[INSERT_PR_NUMBER_HERE]. Key changes include:
+Key changes include:
 
-1. **Updated versioning script**: `scripts/update-version.mjs` now tracks per-extension commit counts
+1. **Updated versioning script**: `scripts/update-version.mjs` now tracks per-extension commit counts using git commit history for each extension's directory
 2. **Updated documentation**: `.github/workflows/README.md` explains the new system
-3. **Testing**: Comprehensive tests validate the implementation
+3. **Manual testing**: Verified through manual test scenarios
 4. **Implementation guide**: `VERSIONING_IMPLEMENTATION.md` provides detailed documentation
 
-See the PR for full details and test results.
+See the code changes in this PR for full details.

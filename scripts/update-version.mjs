@@ -19,7 +19,7 @@
  */
 
 import { readFileSync, writeFileSync, readdirSync } from 'fs';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -32,33 +32,12 @@ const rootDir = join(__dirname, '..');
 const MAX_FALLBACK_VERSION = 10000;
 
 /**
- * Get the commit count for a specific path in the repository
- * @param {string} path - The path to count commits for (e.g., 'apps/notification-hub/')
- * @returns {number} The number of commits affecting the path
- */
-function getGitCommitCountForPath(path) {
-  try {
-    // Get commit count for specific path from the beginning of the repository
-    const count = execSync(`git rev-list --count HEAD -- ${path}`, { 
-      cwd: rootDir,
-      encoding: 'utf8' 
-    }).trim();
-    return parseInt(count, 10);
-  } catch (error) {
-    console.error(`Warning: Could not get git commit count for path ${path}:`, error.message);
-    // Fallback to timestamp-based versioning if git is not available
-    // Use modulo to keep version number reasonable (0-9999)
-    return Math.floor(Date.now() / 1000) % MAX_FALLBACK_VERSION;
-  }
-}
-
-/**
  * Extract the source directory paths from a manifest's files array
  * @param {object} manifest - The parsed manifest object
  * @returns {string[]} Array of source directory paths to track for versioning
  */
 function getExtensionPaths(manifest) {
-  const paths = [];
+  const paths = new Set();
   
   // Extract paths from the files array
   if (manifest.files && Array.isArray(manifest.files)) {
@@ -72,18 +51,16 @@ function getExtensionPaths(manifest) {
         if (pathParts.length >= 2 && pathParts[0] === 'apps') {
           // Track the app directory (apps/notification-hub/)
           const appPath = `${pathParts[0]}/${pathParts[1]}/`;
-          if (!paths.includes(appPath)) {
-            paths.push(appPath);
-          }
+          paths.add(appPath);
         } else {
-          // For non-app paths, track them as-is
-          paths.push(file.path);
+          // For non-app paths, track them as-is (now deduplicated via Set)
+          paths.add(file.path);
         }
       }
     }
   }
   
-  return paths;
+  return Array.from(paths);
 }
 
 function updateManifestVersion(manifestPath) {
@@ -112,24 +89,37 @@ function updateManifestVersion(manifestPath) {
   // Get the paths associated with this extension
   const extensionPaths = getExtensionPaths(manifest);
   
+  // Always include the manifest file itself so manifest-only changes bump the PATCH version
+  let manifestRepoPath = manifestPath;
+  if (manifestRepoPath.startsWith(rootDir + '/') || manifestRepoPath.startsWith(rootDir + '\\')) {
+    manifestRepoPath = manifestRepoPath.slice(rootDir.length + 1);
+  }
+  if (manifestRepoPath && !extensionPaths.includes(manifestRepoPath)) {
+    extensionPaths.push(manifestRepoPath);
+  }
+  
   if (extensionPaths.length === 0) {
     throw new Error(`No file paths found in manifest ${manifestPath}. Cannot determine extension directory.`);
   }
   
   // Calculate commit count based on changes to extension-specific paths
-  // Use the maximum commit count across all paths to ensure we capture all relevant changes
-  // This approach ensures that any change to any part of the extension increments the version
-  // For example, if an extension has multiple file paths and any one changes, the version should increment
-  let maxCommitCount = 0;
-  const pathCommits = {};
-  
-  for (const path of extensionPaths) {
-    const commitCount = getGitCommitCountForPath(path);
-    pathCommits[path] = commitCount;
-    maxCommitCount = Math.max(maxCommitCount, commitCount);
+  // Use a single git command with all paths (union) to ensure any change to any path increments the version
+  // This ensures monotonic version increments when any tracked path changes
+  let commitCount = 0;
+  try {
+    const args = ['rev-list', '--count', 'HEAD', '--', ...extensionPaths];
+    const count = execFileSync('git', args, { 
+      cwd: rootDir,
+      encoding: 'utf8' 
+    }).trim();
+    commitCount = parseInt(count, 10);
+  } catch (error) {
+    console.error(`Warning: Could not get git commit count for paths:`, error.message);
+    // Fallback to timestamp-based versioning if git is not available
+    commitCount = Math.floor(Date.now() / 1000) % MAX_FALLBACK_VERSION;
   }
   
-  const patch = maxCommitCount;
+  const patch = commitCount;
   
   // Generate new version
   const newVersion = `${major}.${minor}.${patch}`;
@@ -140,8 +130,8 @@ function updateManifestVersion(manifestPath) {
   console.log(`  - Minor: ${minor} (from manifest)`);
   console.log(`  - Patch: ${patch} (commits affecting extension paths)`);
   console.log(`  Extension paths tracked:`);
-  for (const [path, count] of Object.entries(pathCommits)) {
-    console.log(`    - ${path}: ${count} commit(s)`);
+  for (const path of extensionPaths) {
+    console.log(`    - ${path}`);
   }
   
   // Update manifest with new version
