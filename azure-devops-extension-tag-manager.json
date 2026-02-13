@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "tag-manager",
   "publisher": "notification-hub-publisher",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "name": "Work Item Tag Manager",
   "description": "A modern user interface for managing work item tags in Azure DevOps",
   "public": false,
@@ -32,8 +32,7 @@
     }
   ],
   "scopes": [
-    "vso.work",
-    "vso.work_write"
+    "vso.work"
   ],
   "files": [
     {

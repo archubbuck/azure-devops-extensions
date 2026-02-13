@@ -119,7 +119,8 @@ The extension uses the Azure DevOps REST API to interact with tags. Please note:
 ## Keyboard Shortcuts
 
 - **Enter**: Submit forms (Create Tag, Rename Tag modals)
-- **Escape**: Close modals (click outside modal or use Cancel button)
+- **Space/Enter**: Select or deselect tag cards
+- **Click outside modal**: Close modals (or use Cancel button)
 
 ## Browser Support
 

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import * as SDK from 'azure-devops-extension-sdk';
+import { IProjectPageService } from 'azure-devops-extension-api';
 import { WorkItemTrackingRestClient } from 'azure-devops-extension-api/WorkItemTracking';
 import './app.css';
 
@@ -51,9 +52,12 @@ export function App() {
         }
       } else {
         // Fall back to service to get project info
-        const pageDataService = await SDK.getService('ms.vss-tfs-web.tfs-page-data-service');
-        const serviceProjectInfo = await (pageDataService as { getProjectInfo: () => Promise<ProjectInfo> }).getProjectInfo();
-        projectInfo = serviceProjectInfo;
+        const projectService = await SDK.getService<IProjectPageService>('ms.vss-tfs-web.tfs-page-data-service');
+        const project = await projectService.getProject();
+        if (!project) {
+          throw new Error('Unable to determine current project');
+        }
+        projectInfo = { id: project.id, name: project.name };
       }
       
       setProjectName(projectInfo.name);
@@ -127,7 +131,7 @@ export function App() {
         lastUpdated: new Date().toISOString(),
       };
       
-      setTags([...tags, newTag]);
+      setTags(prevTags => [...prevTags, newTag]);
       setNewTagName('');
       setShowCreateModal(false);
     } catch (err) {
@@ -148,7 +152,7 @@ export function App() {
     try {
       // For demonstration purposes, update in local state
       // TODO: In production, update all work items with the old tag to use the new tag name
-      setTags(tags.map(tag => 
+      setTags(prevTags => prevTags.map(tag => 
         tag.id === renameTagId 
           ? { ...tag, name: renameTagName.trim(), lastUpdated: new Date().toISOString() }
           : tag
@@ -180,7 +184,7 @@ export function App() {
     try {
       // For demonstration purposes, update in local state
       // TODO: In production, remove the tags from all work items that use them
-      setTags(tags.filter(tag => !selectedTags.has(tag.id)));
+      setTags(prevTags => prevTags.filter(tag => !selectedTags.has(tag.id)));
       setSelectedTags(new Set());
       setShowDeleteModal(false);
     } catch (err) {
@@ -290,6 +294,14 @@ export function App() {
               key={tag.id}
               className={`tag-card ${selectedTags.has(tag.id) ? 'selected' : ''}`}
               onClick={() => toggleTagSelection(tag.id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  toggleTagSelection(tag.id);
+                }
+              }}
             >
               <div className="tag-name">{tag.name}</div>
               <div className="tag-details">

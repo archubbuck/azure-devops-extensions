@@ -68,40 +68,6 @@ function getExtensionPaths(manifest) {
   return Array.from(paths);
 }
 
-/**
- * Extract tracked paths from manifest file
- * Converts dist paths to source paths since dist is in .gitignore
- * @param {object} manifest - Parsed manifest object
- * @param {string} manifestPath - Path to manifest file
- * @returns {string[]} Array of paths to track for versioning
- */
-function getTrackedPaths(manifest, manifestPath) {
-  const trackedPaths = [];
-  
-  // Add the manifest file itself
-  trackedPaths.push(manifestPath);
-  
-  // Extract extension directories from files array
-  if (manifest.files && Array.isArray(manifest.files)) {
-    for (const file of manifest.files) {
-      if (file.path && file.addressable) {
-        // Convert dist path to source path (dist is in .gitignore)
-        // Example: apps/notification-hub/dist -> apps/notification-hub/
-        const distPath = file.path;
-        if (distPath.endsWith('/dist')) {
-          const sourcePath = distPath.slice(0, -5) + '/'; // Remove '/dist', add trailing slash
-          trackedPaths.push(sourcePath);
-        } else {
-          // If not a dist path, track it as-is
-          trackedPaths.push(file.path);
-        }
-      }
-    }
-  }
-  
-  return trackedPaths;
-}
-
 function updateManifestVersion(manifestPath) {
   // Read the current manifest
   const manifestContent = readFileSync(manifestPath, 'utf8');
