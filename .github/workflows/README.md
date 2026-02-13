@@ -124,28 +124,46 @@ You can also trigger deployment manually:
 
 ## Extension Versioning
 
-The extension uses **automatic versioning** to prevent version conflicts during publishing.
+The repository uses **automatic per-extension versioning** to prevent version conflicts during publishing.
 
 ### Versioning Strategy
 
 **Format**: `MAJOR.MINOR.PATCH` (semantic versioning)
 
-- **MAJOR.MINOR**: Manually controlled in `azure-devops-extension.json`
-- **PATCH**: Automatically generated based on git commit count during CD workflow
+- **MAJOR.MINOR**: Manually controlled in each extension's manifest file (e.g., `azure-devops-extension-notification-hub.json`)
+- **PATCH**: Automatically generated based on git commit count for that specific extension's directory
+
+### Per-Extension Versioning
+
+Each extension in the monorepo has independent versioning:
+
+- **notification-hub**: Tracked via commits to `apps/notification-hub/`
+- **hello-azure**: Tracked via commits to `apps/hello-azure/`
+
+This ensures that:
+- Only extensions with actual code changes get version increments
+- Unaffected extensions maintain their current version
+- Each extension can evolve independently
 
 ### How It Works
 
-The CD workflow automatically updates the version before publishing:
+The CD workflow automatically updates each extension's version before publishing:
 
-1. Reads the current `MAJOR.MINOR` from `azure-devops-extension.json`
-2. Calculates `PATCH` version using `git rev-list --count HEAD`
-3. Updates manifest with new version (e.g., `1.0.5`)
-4. Packages and publishes with the new version
+1. Reads the current `MAJOR.MINOR` from each extension's manifest file
+2. Calculates `PATCH` version using `git rev-list --count HEAD -- apps/[extension-name]/`
+3. Updates each manifest with its specific version
+4. Packages and publishes each extension with its independent version
+
+**Example scenario:**
+- Modify only `apps/notification-hub/` code
+- Result: notification-hub version increments (e.g., 1.1.4 → 1.1.5)
+- Result: hello-azure version stays the same (e.g., 1.0.3)
 
 This ensures:
-- Each deployment has a unique version number
+- Each deployment has a unique version number per extension
 - No manual version bumping required
 - Prevents "Version number must increase" errors from Azure DevOps marketplace
+- Avoids unnecessary version increments for unchanged extensions
 
 ### Manual Version Updates
 
@@ -157,9 +175,9 @@ npm run update-version
 
 ### Incrementing Major or Minor Version
 
-To release a new major or minor version:
+To release a new major or minor version for a specific extension:
 
-1. Update the version in `azure-devops-extension.json`:
+1. Update the version in the extension's manifest file (e.g., `azure-devops-extension-notification-hub.json`):
    ```json
    {
      "version": "2.0.0",
@@ -176,14 +194,14 @@ To release a new major or minor version:
 
 ### Handling Version Conflicts
 
-If you encounter "Version number must increase" errors during publishing:
+If you encounter "Version number must increase" errors during publishing for a specific extension:
 
 **Cause**: This typically happens when:
 - The git history has been rewritten (rebased, grafted, or shallow cloned)
-- The commit count no longer matches the published version history
+- The commit count for the extension's directory no longer matches the published version history
 - The calculated PATCH version is less than or equal to an already-published version
 
-**Solution**: Increment the MINOR or MAJOR version in `azure-devops-extension.json` (for example, changing from `1.0.x` to `1.1.0`):
+**Solution**: Increment the MINOR or MAJOR version in the specific extension's manifest file (e.g., changing from `1.0.x` to `1.1.0` in `azure-devops-extension-notification-hub.json`):
 
 ```json
 {
