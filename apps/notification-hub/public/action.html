@@ -7,44 +7,126 @@
   </head>
   <body>
     <script>
+      // Enhanced logging helper
+      function logInfo(message, data) {
+        var timestamp = new Date().toISOString();
+        console.log('[' + timestamp + '] [Notification Hub Action] ' + message, data || '');
+      }
+      
+      function logError(message, error) {
+        var timestamp = new Date().toISOString();
+        console.error('[' + timestamp + '] [Notification Hub Action ERROR] ' + message, error || '');
+      }
+      
+      logInfo('=== Notification Hub Action Starting ===');
+      logInfo('Document readyState: ' + document.readyState);
+      logInfo('Window location: ' + window.location.href);
+      
       // Initialize the SDK and register the action handler
+      logInfo('Initializing Azure DevOps SDK...');
+      var initStartTime = Date.now();
+      
       SDK.init({ loaded: true, applyTheme: true }).then(function() {
-        console.log('[Notification Hub Action] SDK initialized');
+        var initDuration = Date.now() - initStartTime;
+        logInfo('SDK initialized successfully in ' + initDuration + 'ms');
+        
+        // Log extension context information
+        var extensionContext = SDK.getExtensionContext();
+        logInfo('Extension Context:', {
+          id: extensionContext.id,
+          publisherId: extensionContext.publisherId,
+          extensionId: extensionContext.extensionId,
+          version: extensionContext.version
+        });
+        
+        // Log contribution ID
+        var contributionId = SDK.getContributionId();
+        logInfo('Current Contribution ID: ' + contributionId);
+        
+        // Log host information
+        var host = SDK.getHost();
+        logInfo('Azure DevOps Host:', {
+          id: host.id,
+          name: host.name,
+          serviceVersion: host.serviceVersion
+        });
+        
+        // Log user information
+        var user = SDK.getUser();
+        logInfo('Current User:', {
+          displayName: user.displayName,
+          id: user.id,
+          descriptor: user.descriptor
+        });
         
         // Create the action handler object
         var actionHandler = {
           execute: function(actionContext) {
-            console.log('[Notification Hub Action] Action executed, opening panel...');
+            logInfo('=== Action Execute Called ===');
+            logInfo('Action Context:', actionContext);
             
             // Derive the panel contribution ID from the extension context
-            var extensionContext = SDK.getExtensionContext();
             var panelContributionId = extensionContext.id + ".notification-hub-panel";
-            
-            console.log('[Notification Hub Action] Panel ID: ' + panelContributionId);
+            logInfo('Attempting to open panel with ID: ' + panelContributionId);
             
             // Get the host page layout service and open the panel
+            logInfo('Requesting host page layout service...');
             SDK.getService("ms.vss-features.host-page-layout-service").then(function(layoutService) {
+              logInfo('Layout service obtained successfully');
+              logInfo('Calling openPanel with config:', {
+                contributionId: panelContributionId,
+                title: 'Notifications',
+                size: 1
+              });
+              
               layoutService.openPanel(panelContributionId, {
                 title: "Notifications",
                 size: 1 // PanelSize.Medium (enum value)
               }).then(function() {
-                console.log('[Notification Hub Action] Panel opened successfully');
+                logInfo('✓ Panel opened successfully');
               }).catch(function(error) {
-                console.error('[Notification Hub Action] Failed to open panel:', error);
+                logError('Failed to open panel', error);
+                logError('Panel ID attempted: ' + panelContributionId);
+                logError('Error details:', {
+                  name: error.name,
+                  message: error.message,
+                  stack: error.stack
+                });
               });
             }).catch(function(error) {
-              console.error('[Notification Hub Action] Failed to get layout service:', error);
+              logError('Failed to get layout service', error);
+              logError('Error details:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+              });
             });
           }
         };
         
         // Register the action handler with the SDK
-        SDK.register(SDK.getContributionId(), actionHandler);
-        console.log('[Notification Hub Action] Action handler registered');
+        logInfo('Registering action handler for contribution: ' + contributionId);
+        SDK.register(contributionId, actionHandler);
+        logInfo('✓ Action handler registered successfully');
+        
+        // Notify that the extension loaded successfully
         SDK.notifyLoadSucceeded();
+        logInfo('✓ Notified SDK of successful load');
+        logInfo('=== Notification Hub Action Ready ===');
       }).catch(function(error) {
-        console.error('[Notification Hub Action] Failed to initialize SDK:', error);
-        SDK.notifyLoadFailed('Failed to initialize SDK: ' + error.message);
+        logError('Failed to initialize SDK', error);
+        logError('Error details:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
+        
+        try {
+          SDK.notifyLoadFailed('Failed to initialize SDK: ' + error.message);
+          logError('Notified SDK of load failure');
+        } catch (notifyError) {
+          logError('Failed to notify SDK of load failure', notifyError);
+        }
       });
     </script>
   </body>
