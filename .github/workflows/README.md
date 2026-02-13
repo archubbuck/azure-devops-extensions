@@ -183,11 +183,11 @@ If you encounter "Version number must increase" errors during publishing:
 - The commit count no longer matches the published version history
 - The calculated PATCH version is less than or equal to an already-published version
 
-**Solution**: Increment the MINOR or MAJOR version in `azure-devops-extension.json`:
+**Solution**: Increment the MINOR or MAJOR version in `azure-devops-extension.json` (for example, changing from `1.0.x` to `1.1.0`):
 
 ```json
 {
-  "version": "1.1.0",  // Changed from 1.0.x
+  "version": "1.1.0",
   ...
 }
 ```
