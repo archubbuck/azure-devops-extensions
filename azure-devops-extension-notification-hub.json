@@ -16,7 +16,7 @@
     }
   ],
   "icons": {
-    "default": "apps/notification-hub/dist/favicon.ico"
+    "default": "apps/better-notification-hub/dist/favicon.ico"
   },
   "contributions": [
     {
@@ -26,7 +26,7 @@
       "targets": [],
       "properties": {
         "name": "Notification Hub",
-        "uri": "apps/notification-hub/dist/index.html",
+        "uri": "apps/better-notification-hub/dist/index.html",
         "height": "100%",
         "width": "400px"
       }
@@ -40,8 +40,8 @@
       ],
       "properties": {
         "name": "Notifications",
-        "icon": "apps/notification-hub/dist/images/bell-icon.png",
-        "uri": "apps/notification-hub/dist/action.html"
+        "icon": "apps/better-notification-hub/dist/images/bell-icon.png",
+        "uri": "apps/better-notification-hub/dist/action.html"
       }
     }
   ],
@@ -52,7 +52,7 @@
   ],
   "files": [
     {
-      "path": "apps/notification-hub/dist",
+      "path": "apps/better-notification-hub/dist",
       "addressable": true
     }
   ]

@@ -15,7 +15,7 @@
     }
   ],
   "icons": {
-    "default": "apps/hello-azure/dist/favicon.ico"
+    "default": "apps/better-hello-azure/dist/favicon.ico"
   },
   "contributions": [
     {
@@ -27,14 +27,14 @@
       ],
       "properties": {
         "name": "Hello Azure",
-        "uri": "apps/hello-azure/dist/index.html"
+        "uri": "apps/better-hello-azure/dist/index.html"
       }
     }
   ],
   "scopes": [],
   "files": [
     {
-      "path": "apps/hello-azure/dist",
+      "path": "apps/better-hello-azure/dist",
       "addressable": true
     }
   ]
