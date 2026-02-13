@@ -1,9 +1,9 @@
 {
   "manifestVersion": 1,
-  "id": "hello-azure",
+  "id": "better-hello-azure",
   "publisher": "notification-hub-publisher",
-  "version": "1.0.4",
-  "name": "Hello Azure DevOps",
+  "version": "1.0.72",
+  "name": "Better Hello Azure",
   "description": "A basic Azure DevOps extension for testing automated deployment",
   "public": false,
   "categories": [

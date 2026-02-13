@@ -1,9 +1,9 @@
 {
   "manifestVersion": 1,
-  "id": "notification-hub",
+  "id": "better-notification-hub",
   "publisher": "notification-hub-publisher",
-  "version": "1.1.4",
-  "name": "Notification Hub",
+  "version": "1.1.72",
+  "name": "Better Notification Hub",
   "description": "A centralized notification hub for Azure DevOps that aggregates @mentions, PR comments, and work item updates",
   "public": false,
   "categories": [
