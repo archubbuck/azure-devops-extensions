@@ -63,8 +63,16 @@ The versioning system operates as follows:
 
 3. **Version Calculation**:
    - MAJOR.MINOR: Read from extension manifest (e.g., `azure-devops-extension-notification-hub.json`)
-   - PATCH: Calculated from git commit count for that extension's directory
-   - Final version: `${major}.${minor}.${commitCount}`
+   - PATCH: Calculated using `Math.max(git-commit-count, current-patch-version)`
+   - Version Floor Protection: Ensures versions never decrease, even when switching versioning strategies
+   - Final version: `${major}.${minor}.${patch}`
+
+4. **Version Floor Protection**:
+   - The script uses `Math.max(commitCount, currentPatch)` to prevent version downgrades
+   - Critical for Azure DevOps Marketplace compliance (versions must always increase)
+   - Handles transition from full-repo versioning to per-extension versioning
+   - Example: If manifest has version 1.0.71 but commit count is 3, version stays at 1.0.71
+   - Future commits will increment from 71 once commit count exceeds that value
 
 ### Example Scenarios
 
@@ -182,6 +190,40 @@ To increment major/minor versions:
 - **Backward Compatible**: Existing manifest files work without modification
 - **Git Required**: Requires git history to calculate versions
 - **Fallback**: If git is unavailable, falls back to timestamp-based versioning
+- **Version Floor Protection**: Prevents version downgrades when switching from full-repo to per-extension versioning
+
+## Troubleshooting
+
+### Version Downgrades
+
+**Problem**: Azure DevOps Marketplace rejects version downgrades with error:
+```
+error: Version number must increase each time an extension is published. 
+Extension: publisher.extension-name  Current version: 1.0.71  Updated version: 1.0.3
+```
+
+**Solution**: The versioning script now includes version floor protection:
+- Uses `Math.max(commitCount, currentPatch)` to ensure versions never decrease
+- Automatically handles transition from higher version numbers
+- No manual intervention required - the script maintains the highest version
+
+**Example**:
+```bash
+# Manifest shows version: "1.0.71" (from previous full-repo versioning)
+# Git commit count for extension path: 3
+# Script calculates: Math.max(3, 71) = 71
+# Result: Version stays at 1.0.71 (no downgrade)
+
+# After next commit to the extension:
+# Git commit count: 4
+# Script calculates: Math.max(4, 71) = 71
+# Result: Version stays at 1.0.71 (still below floor)
+
+# After many more commits (e.g., commit count reaches 72):
+# Git commit count: 72
+# Script calculates: Math.max(72, 71) = 72
+# Result: Version increments to 1.0.72
+```
 
 ## Future Enhancements
 
