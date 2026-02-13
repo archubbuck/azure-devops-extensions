@@ -14,7 +14,7 @@
  */
 
 import { readFileSync, existsSync } from 'fs';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -29,10 +29,27 @@ const rootDir = join(__dirname, '..');
  * @returns {string|null} Current published version or null if not published
  */
 function getMarketplaceVersion(publisherId, extensionId) {
+  // Validate inputs to prevent command injection
+  // Publisher ID and extension ID should be alphanumeric with hyphens/underscores only
+  const validIdPattern = /^[a-zA-Z0-9_-]+$/;
+  if (!validIdPattern.test(publisherId) || !validIdPattern.test(extensionId)) {
+    console.error(`Error: Invalid publisher ID or extension ID format`);
+    return null;
+  }
+  
   try {
-    // Use tfx extension show to get current marketplace version
-    const output = execSync(
-      `tfx extension show --publisher ${publisherId} --extension-id ${extensionId} --json`,
+    // Use execFileSync with array args to prevent shell injection
+    const output = execFileSync(
+      'tfx',
+      [
+        'extension',
+        'show',
+        '--publisher',
+        publisherId,
+        '--extension-id',
+        extensionId,
+        '--json'
+      ],
       { 
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'pipe']
