@@ -86,15 +86,12 @@ function updateManifestVersion(manifestPath) {
   
   const major = parseInt(versionParts[0], 10);
   const minor = parseInt(versionParts[1], 10);
+  // Default to 0 if no patch version exists (e.g., "1.0" → patch = 0)
+  // This ensures version floor protection works even for new extensions
   const currentPatch = versionParts.length >= 3 ? parseInt(versionParts[2], 10) : 0;
   
-  if (isNaN(major) || isNaN(minor)) {
-    throw new Error(`Invalid version numbers in: ${currentVersion}. Major and minor must be integers.`);
-  }
-  
-  // Validate current patch if it exists
-  if (versionParts.length >= 3 && isNaN(currentPatch)) {
-    throw new Error(`Invalid patch version in: ${currentVersion}. Patch must be an integer.`);
+  if (isNaN(major) || isNaN(minor) || (versionParts.length >= 3 && isNaN(currentPatch))) {
+    throw new Error(`Invalid version numbers in: ${currentVersion}. Major, minor, and patch (if present) must be integers.`);
   }
   
   // Get the paths associated with this extension
