@@ -9,7 +9,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export default defineConfig(() => ({
   root: __dirname,
   base: './',
-  cacheDir: '../../node_modules/.vite/apps/notification-hub',
+  cacheDir: '../../node_modules/.vite/apps/better-notification-hub',
   server: {
     port: 4200,
     host: 'localhost',

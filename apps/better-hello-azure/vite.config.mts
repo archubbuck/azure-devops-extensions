@@ -9,7 +9,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export default defineConfig(() => ({
   root: __dirname,
   base: './',
-  cacheDir: '../../node_modules/.vite/apps/hello-azure',
+  cacheDir: '../../node_modules/.vite/apps/better-hello-azure',
   server: {
     port: 4201,
     host: 'localhost',
