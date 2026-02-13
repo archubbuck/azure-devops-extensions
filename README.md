@@ -6,19 +6,17 @@ This repository is an Nx-powered monorepo engineered to develop and scale multip
 
 This monorepo currently contains:
 
-### The Notification Hub
+### Hello Azure DevOps
 
-A centralized notification hub for Azure DevOps that aggregates activity across your projects.
+A basic Azure DevOps extension that demonstrates automated deployment via CI/CD pipeline.
 
 **Features:**
-- 🔔 **Global Bell Icon**: Accessible from the Azure DevOps header with unread count badge
-- 📱 **Side Panel Activity Feed**: Slide-out panel displaying all your notifications
-- 💬 **@Mentions**: Get notified when someone mentions you in work items or pull requests
-- 🗨️ **PR Comments**: Track new comments on your pull requests
-- 📋 **Work Item Updates**: Stay informed about state changes and assignments
-- ✅ **Mark as Read**: Mark individual or all notifications as read
-- 🔍 **Filters**: Filter notifications by type (All, Unread, Mentions, PRs, Work Items)
-- 🔗 **Deep Links**: Click any notification to navigate directly to the artifact
+- 👋 **Simple Hub**: A clean welcome page accessible from the project admin hub group
+- 📋 **User Information**: Displays current user and host information
+- ✓ **Deployment Status**: Shows extension version and deployment status
+- 🎨 **Modern UI**: Clean, gradient-based design with responsive layout
+
+This extension serves as a minimal example following Azure DevOps best practices and can be used as a template for creating new extensions.
 
 ## Getting Started
 
@@ -59,23 +57,24 @@ npm run test
 
 ### Building the Extension
 
-The Notification Hub can be built and packaged as an Azure DevOps extension:
+The extension can be built and packaged as an Azure DevOps extension:
 
 ```bash
 # Build the application
 npm run build
 
-# The built files will be in apps/notification-hub/dist/
+# The built files will be in apps/hello-azure/dist/
 ```
 
-**Build Output**: The build process uses Nx with Vite to create an optimized production bundle in `apps/notification-hub/dist/`:
+**Build Output**: The build process uses Nx with Vite to create an optimized production bundle in `apps/hello-azure/dist/`:
 - `index.html` - Main HTML entry point
 - `assets/` - JavaScript and CSS bundles
 - `favicon.ico` - Extension icon
+- `SDK.min.js` - Azure DevOps SDK (bundled locally to avoid CSP issues)
 
 The build is configured in:
-- `apps/notification-hub/vite.config.mts` - Vite build configuration
-- `package.json` - Build script that runs: `npx nx build @notification-hub/notification-hub`
+- `apps/hello-azure/vite.config.mts` - Vite build configuration
+- `package.json` - Build script that runs: `npx nx build @hello-azure/hello-azure`
 - `azure-devops-extension.json` - Extension manifest that references the dist folder
 
 ### CI/CD Pipeline
@@ -120,60 +119,36 @@ For detailed instructions on packaging and deploying the extension, see [DEPLOYM
 ```
 azure-devops-extensions/
 ├── apps/
-│   └── notification-hub/          # The Notification Hub React app
-│       ├── src/
-│       │   ├── app/                # Main app component
-│       │   ├── components/         # React components
-│       │   │   ├── NotificationBell.tsx
-│       │   │   ├── NotificationItem.tsx
-│       │   │   └── NotificationPanel.tsx
-│       │   ├── services/           # API services
-│       │   │   └── notification.service.ts
-│       │   ├── types/              # TypeScript types
-│       │   │   └── notification.ts
-│       │   ├── main.tsx            # Entry point with SDK initialization
-│       │   └── styles.css          # Global styles
-│       ├── public/                 # Static assets
-│       └── dist/                   # Built output
-├── azure-devops-extension.json    # Extension manifest
-├── nx.json                        # Nx configuration
-└── package.json                   # Root package.json
+│   ├── hello-azure/                # Hello Azure DevOps extension
+│   │   ├── src/
+│   │   │   ├── app/                # Main app component
+│   │   │   │   ├── app.tsx         # App component
+│   │   │   │   └── app.css         # App styles
+│   │   │   ├── main.tsx            # Entry point with SDK initialization
+│   │   │   └── styles.css          # Global styles
+│   │   ├── public/                 # Static assets
+│   │   │   ├── SDK.min.js          # Azure DevOps SDK
+│   │   │   └── favicon.ico         # Extension icon
+│   │   ├── vite.config.mts         # Vite configuration
+│   │   └── dist/                   # Built output (ignored by git)
+│   └── notification-hub/           # Legacy notification hub app
+├── azure-devops-extension.json     # Extension manifest
+├── nx.json                         # Nx configuration
+└── package.json                    # Root package.json
 ```
 
-## Notification Hub Architecture
+## Extension Architecture
 
-### Components
+### Hello Azure DevOps Extension
 
-1. **NotificationBell**: A bell icon component with badge count displayed in the header
-2. **NotificationPanel**: A side panel that slides in from the right showing all notifications
-3. **NotificationItem**: Individual notification card with metadata and actions
+A simple hub contribution that demonstrates:
+- Azure DevOps SDK initialization with proper logging
+- User and host information retrieval
+- Extension context access
+- Clean React component structure
+- Modern styling with CSS
 
-### Services
-
-- **NotificationService**: Singleton service that:
-  - Fetches notifications from Azure DevOps REST APIs
-  - Aggregates @mentions from work items
-  - Collects PR comments where user is mentioned
-  - Tracks work item updates (assignments, state changes)
-  - Manages read/unread state with localStorage
-  - Provides filtering capabilities
-
-### Azure DevOps SDK Integration
-
-The extension uses `azure-devops-extension-sdk` to:
-- Initialize and authenticate with Azure DevOps
-- Access REST API clients for Work Item Tracking and Git
-- Apply Azure DevOps theme to the UI
-- Navigate to artifacts via deep links
-
-### Data Flow
-
-1. App initializes and SDK authenticates
-2. NotificationService fetches data from multiple sources in parallel
-3. Notifications are aggregated, sorted by timestamp
-4. UI components display notifications with filters
-5. User interactions (mark as read, click) update state
-6. State persists to localStorage for offline access
+The extension is configured as a hub contribution in the project admin hub group, making it accessible from the project settings area in Azure DevOps.
 
 ## Technology Stack
 
