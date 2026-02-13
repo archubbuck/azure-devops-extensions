@@ -7,7 +7,7 @@
       "path": "./apps/notification-hub-e2e"
     },
     {
-      "path": "./apps/notification-hub"
+      "path": "./apps/better-notification-hub"
     }
   ]
 }

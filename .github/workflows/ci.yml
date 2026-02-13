@@ -37,5 +37,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: extension-build
-          path: apps/notification-hub/dist
+          path: apps/better-notification-hub/dist
           retention-days: 7

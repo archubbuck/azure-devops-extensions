@@ -38,14 +38,14 @@ jobs:
           echo "Verifying build output for all extensions..."
           
           # Check notification-hub
-          if [ ! -d "apps/notification-hub/dist" ] || [ -z "$(ls -A apps/notification-hub/dist)" ]; then
+          if [ ! -d "apps/better-notification-hub/dist" ] || [ -z "$(ls -A apps/better-notification-hub/dist)" ]; then
             echo "❌ Build verification failed: notification-hub dist folder is missing or empty."
             exit 1
           fi
           echo "✅ notification-hub build output verified"
           
           # Check hello-azure
-          if [ ! -d "apps/hello-azure/dist" ] || [ -z "$(ls -A apps/hello-azure/dist)" ]; then
+          if [ ! -d "apps/better-hello-azure/dist" ] || [ -z "$(ls -A apps/better-hello-azure/dist)" ]; then
             echo "❌ Build verification failed: hello-azure dist folder is missing or empty."
             exit 1
           fi
@@ -55,10 +55,10 @@ jobs:
           echo "📦 Build artifacts:"
           echo ""
           echo "notification-hub:"
-          ls -lh apps/notification-hub/dist/
+          ls -lh apps/better-notification-hub/dist/
           echo ""
           echo "hello-azure:"
-          ls -lh apps/hello-azure/dist/
+          ls -lh apps/better-hello-azure/dist/
       
       - name: Update versions automatically
         env:
