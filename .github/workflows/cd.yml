@@ -61,6 +61,8 @@ jobs:
           ls -lh apps/hello-azure/dist/
       
       - name: Update versions automatically
+        env:
+          PUBLISHER_ID: ${{ secrets.PUBLISHER_ID }}
         run: |
           echo "Automatically updating versions for all extensions based on git history..."
           node scripts/update-version.mjs
@@ -95,66 +97,142 @@ jobs:
             echo ""
           fi
           
-          # Function to publish or package an extension with retry logic
+          # Function to check if extension needs publishing
+          needs_publish() {
+            local MANIFEST=$1
+            
+            # Check marketplace version vs local version
+            if node scripts/check-marketplace-version.mjs --manifest "$MANIFEST" --publisher "$PUBLISHER_ID"; then
+              return 0  # Needs publish
+            else
+              local EXIT_CODE=$?
+              if [ $EXIT_CODE -eq 1 ]; then
+                return 1  # Skip publish
+              else
+                # Error occurred, but continue with publish attempt to be safe
+                echo "  ⚠️  Could not determine marketplace version, will attempt publish"
+                return 0
+              fi
+            fi
+          }
+          
+          # Function to publish or package an extension with smart retry logic
           publish_extension() {
             local MANIFEST=$1
             local EXTENSION_NAME=$(cat "$MANIFEST" | jq -r '.name')
             local EXTENSION_VERSION=$(cat "$MANIFEST" | jq -r '.version')
+            local EXTENSION_ID=$(cat "$MANIFEST" | jq -r '.id')
             
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             echo "📦 Processing: $EXTENSION_NAME (v$EXTENSION_VERSION)"
+            echo "   Extension ID: $EXTENSION_ID"
             echo "   Manifest: $MANIFEST"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             
-            if [ -n "$AZURE_DEVOPS_PAT" ]; then
-              echo "Publishing to marketplace and sharing with $ORGANIZATION_NAME..."
-              
-              # Use tfx extension publish with retry logic
-              MAX_RETRIES=3
-              ATTEMPT=1
-              
-              while [ $ATTEMPT -le $MAX_RETRIES ]; do
-                echo "📤 Publish attempt $ATTEMPT of $MAX_RETRIES..."
-                
-                if tfx extension publish \
-                  --manifest-globs "$MANIFEST" \
-                  --share-with $ORGANIZATION_NAME \
-                  --token $AZURE_DEVOPS_PAT \
-                  --output-path ./output \
-                  --no-prompt; then
-                  echo "✅ $EXTENSION_NAME published successfully!"
-                  return 0
-                else
-                  EXIT_CODE=$?
-                  echo "⚠️  Publish attempt $ATTEMPT failed with exit code $EXIT_CODE"
-                  
-                  if [ $ATTEMPT -lt $MAX_RETRIES ]; then
-                    DELAY=$((30 * (2 ** ($ATTEMPT - 1))))
-                    echo "⏳ Waiting $DELAY seconds before retry..."
-                    sleep $DELAY
-                    ATTEMPT=$((ATTEMPT + 1))
-                  else
-                    echo "❌ All $MAX_RETRIES publish attempts failed for $EXTENSION_NAME"
-                    return $EXIT_CODE
-                  fi
-                fi
-              done
-            else
+            # Check if we have PAT for publishing
+            if [ -z "$AZURE_DEVOPS_PAT" ]; then
               echo "Creating package only (AZURE_DEVOPS_PAT not set)..."
               tfx extension create --manifest-globs "$MANIFEST" --output-path ./output
               echo "✅ $EXTENSION_NAME package created"
+              return 0
             fi
+            
+            # Check if publish is needed
+            echo ""
+            echo "Checking marketplace version..."
+            if ! needs_publish "$MANIFEST"; then
+              echo "⏭️  Skipping publish: Extension is already up-to-date in marketplace"
+              # Still create the package for artifacts
+              tfx extension create --manifest-globs "$MANIFEST" --output-path ./output
+              return 2  # Return 2 to indicate "skipped" (different from success 0 and failure 1/255)
+            fi
+            
+            echo ""
+            echo "Publishing to marketplace and sharing with $ORGANIZATION_NAME..."
+            
+            # Publish with smart retry logic
+            # Only retry on transient errors (network, timeout), not on validation errors
+            MAX_RETRIES=3
+            ATTEMPT=1
+            
+            while [ $ATTEMPT -le $MAX_RETRIES ]; do
+              echo "📤 Publish attempt $ATTEMPT of $MAX_RETRIES..."
+              
+              # Capture both stdout and stderr
+              PUBLISH_OUTPUT=$(tfx extension publish \
+                --manifest-globs "$MANIFEST" \
+                --share-with $ORGANIZATION_NAME \
+                --token $AZURE_DEVOPS_PAT \
+                --output-path ./output \
+                --no-prompt 2>&1)
+              EXIT_CODE=$?
+              
+              if [ $EXIT_CODE -eq 0 ]; then
+                echo "✅ $EXTENSION_NAME published successfully!"
+                echo "$PUBLISH_OUTPUT" | grep -E "(created|updated|published)" || true
+                return 0
+              fi
+              
+              # Check for specific error patterns
+              if echo "$PUBLISH_OUTPUT" | grep -qi "version number must increase"; then
+                echo "❌ Version error: Local version ($EXTENSION_VERSION) is not greater than marketplace version"
+                echo "   This indicates a versioning script issue. Check update-version.mjs"
+                echo "$PUBLISH_OUTPUT"
+                return 255  # Don't retry version errors
+              elif echo "$PUBLISH_OUTPUT" | grep -qi "already exists in the marketplace"; then
+                echo "❌ Name conflict: Extension name/ID already exists in marketplace"
+                echo "   The extension ID '$EXTENSION_ID' is already taken by another publisher"
+                echo "   Consider using a different extension ID in the manifest"
+                echo "$PUBLISH_OUTPUT"
+                return 255  # Don't retry name conflicts
+              elif echo "$PUBLISH_OUTPUT" | grep -qiE "(timeout|network|connection|ECONNREFUSED|ENOTFOUND)"; then
+                # Transient error - retry
+                echo "⚠️  Network error on attempt $ATTEMPT"
+                if [ $ATTEMPT -lt $MAX_RETRIES ]; then
+                  DELAY=$((10 * $ATTEMPT))  # Linear backoff: 10s, 20s, 30s
+                  echo "⏳ Waiting $DELAY seconds before retry..."
+                  sleep $DELAY
+                  ATTEMPT=$((ATTEMPT + 1))
+                  continue
+                fi
+              else
+                # Unknown error
+                echo "⚠️  Publish attempt $ATTEMPT failed with exit code $EXIT_CODE"
+                echo "$PUBLISH_OUTPUT"
+                if [ $ATTEMPT -lt $MAX_RETRIES ]; then
+                  DELAY=$((10 * $ATTEMPT))
+                  echo "⏳ Waiting $DELAY seconds before retry..."
+                  sleep $DELAY
+                  ATTEMPT=$((ATTEMPT + 1))
+                  continue
+                fi
+              fi
+              
+              # If we get here, all retries exhausted
+              echo "❌ All $MAX_RETRIES publish attempts failed for $EXTENSION_NAME"
+              return $EXIT_CODE
+            done
           }
           
           # Process each extension
           FAILED_EXTENSIONS=""
+          SKIPPED_EXTENSIONS=""
           SUCCESS_COUNT=0
           
           for MANIFEST in $MANIFEST_FILES; do
-            if publish_extension "$MANIFEST"; then
+            EXTENSION_NAME=$(cat "$MANIFEST" | jq -r '.name')
+            
+            publish_extension "$MANIFEST"
+            EXIT_CODE=$?
+            
+            if [ $EXIT_CODE -eq 0 ]; then
+              # Successfully published
               SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+            elif [ $EXIT_CODE -eq 2 ]; then
+              # Skipped (already up-to-date) - return code 2 from publish_extension
+              SKIPPED_EXTENSIONS="${SKIPPED_EXTENSIONS}${EXTENSION_NAME}, "
             else
-              EXTENSION_NAME=$(cat "$MANIFEST" | jq -r '.name')
+              # Failed - 255 for non-retryable errors, other non-zero for retriable failures
               FAILED_EXTENSIONS="${FAILED_EXTENSIONS}${EXTENSION_NAME}, "
             fi
             echo ""
@@ -162,12 +240,18 @@ jobs:
           
           # Summary
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "📊 Summary"
+          echo "📊 Deployment Summary"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "✅ Successful: $SUCCESS_COUNT"
           
+          if [ -n "$SKIPPED_EXTENSIONS" ]; then
+            echo "⏭️  Skipped (up-to-date): ${SKIPPED_EXTENSIONS%, }"
+          fi
+          
           if [ -n "$FAILED_EXTENSIONS" ]; then
             echo "❌ Failed: ${FAILED_EXTENSIONS%, }"
+            echo ""
+            echo "See logs above for detailed error information."
             exit 1
           else
             echo "🎉 All extensions processed successfully!"
