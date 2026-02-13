@@ -11,8 +11,16 @@
  * - MAJOR.MINOR from manifest files (manually controlled)
  * - PATCH auto-incremented based on per-extension git commit count
  * 
- * Each extension tracks commits to its specific directory (derived from manifest.files)
- * and its manifest file to ensure independent versioning.
+ * Per-extension versioning:
+ * - Each extension's version is based on commits that affect files in its directory
+ * - Directories are determined from the manifest's "files" array
+ * - Only changes to extension-specific files increment that extension's version
+ * - This prevents unnecessary version bumps when other extensions are modified
+ * 
+ * Version floor protection:
+ * - The patch version uses MAX(git-commit-count, current-patch-version)
+ * - This prevents version downgrades when switching versioning strategies
+ * - Ensures versions are always monotonically increasing for marketplace compliance
  */
 
 import { readFileSync, writeFileSync, readdirSync } from 'fs';
@@ -29,27 +37,35 @@ const rootDir = join(__dirname, '..');
 const MAX_FALLBACK_VERSION = 10000;
 
 /**
- * Get git commit count for specific paths
- * @param {string[]} paths - Array of paths to track
- * @returns {number} Number of commits affecting these paths
+ * Extract the source directory paths from a manifest's files array
+ * @param {object} manifest - The parsed manifest object
+ * @returns {string[]} Array of source directory paths to track for versioning
  */
-function getGitCommitCount(paths) {
-  try {
-    // Build git command args to count commits for specific paths
-    // Use union approach: count commits that touch ANY of the tracked paths
-    const args = ['rev-list', '--count', 'HEAD', '--', ...paths];
-    
-    const count = execFileSync('git', args, { 
-      cwd: rootDir,
-      encoding: 'utf8' 
-    }).trim();
-    return parseInt(count, 10);
-  } catch (error) {
-    console.error('Warning: Could not get git commit count:', error.message);
-    // Fallback to timestamp-based versioning if git is not available
-    // Use modulo to keep version number reasonable (0-9999)
-    return Math.floor(Date.now() / 1000) % MAX_FALLBACK_VERSION;
+function getExtensionPaths(manifest) {
+  const paths = new Set();
+  
+  // Extract paths from the files array
+  if (manifest.files && Array.isArray(manifest.files)) {
+    for (const file of manifest.files) {
+      if (file.path && typeof file.path === 'string') {
+        // The manifest typically references dist directories (e.g., 'apps/notification-hub/dist')
+        // These dist directories are build artifacts and not tracked in git (in .gitignore)
+        // For versioning, we need to track the source directory instead since that's what's committed
+        // Extract the app directory path (e.g., 'apps/notification-hub/dist' -> 'apps/notification-hub/')
+        const pathParts = file.path.split('/');
+        if (pathParts.length >= 2 && pathParts[0] === 'apps') {
+          // Track the app directory (apps/notification-hub/)
+          const appPath = `${pathParts[0]}/${pathParts[1]}/`;
+          paths.add(appPath);
+        } else {
+          // For non-app paths, track them as-is (now deduplicated via Set)
+          paths.add(file.path);
+        }
+      }
+    }
   }
+  
+  return Array.from(paths);
 }
 
 /**
@@ -104,17 +120,51 @@ function updateManifestVersion(manifestPath) {
   
   const major = parseInt(versionParts[0], 10);
   const minor = parseInt(versionParts[1], 10);
+  // Default to 0 if no patch version exists (e.g., "1.0" → patch = 0)
+  // This ensures version floor protection works even for new extensions
+  const currentPatch = versionParts.length >= 3 ? parseInt(versionParts[2], 10) : 0;
   
-  if (isNaN(major) || isNaN(minor)) {
-    throw new Error(`Invalid version numbers in: ${currentVersion}. Major and minor must be integers.`);
+  if (isNaN(major) || isNaN(minor) || (versionParts.length >= 3 && isNaN(currentPatch))) {
+    throw new Error(`Invalid version numbers in: ${currentVersion}. Major, minor, and patch (if present) must be integers.`);
   }
   
-  // Get tracked paths for this extension
-  const trackedPaths = getTrackedPaths(manifest, manifestPath);
+  // Get the paths associated with this extension
+  const extensionPaths = getExtensionPaths(manifest);
   
-  // Calculate new patch version based on git commit count for this extension's paths
-  const commitCount = getGitCommitCount(trackedPaths);
-  const patch = commitCount;
+  // Always include the manifest file itself so manifest-only changes bump the PATCH version
+  let manifestRepoPath = manifestPath;
+  if (manifestRepoPath.startsWith(rootDir + '/') || manifestRepoPath.startsWith(rootDir + '\\')) {
+    manifestRepoPath = manifestRepoPath.slice(rootDir.length + 1);
+  }
+  if (manifestRepoPath && !extensionPaths.includes(manifestRepoPath)) {
+    extensionPaths.push(manifestRepoPath);
+  }
+  
+  if (extensionPaths.length === 0) {
+    throw new Error(`No file paths found in manifest ${manifestPath}. Cannot determine extension directory.`);
+  }
+  
+  // Calculate commit count based on changes to extension-specific paths
+  // Use a single git command with all paths (union) to ensure any change to any path increments the version
+  // This ensures monotonic version increments when any tracked path changes
+  let commitCount = 0;
+  try {
+    const args = ['rev-list', '--count', 'HEAD', '--', ...extensionPaths];
+    const count = execFileSync('git', args, { 
+      cwd: rootDir,
+      encoding: 'utf8' 
+    }).trim();
+    commitCount = parseInt(count, 10);
+  } catch (error) {
+    console.error(`Warning: Could not get git commit count for paths:`, error.message);
+    // Fallback to timestamp-based versioning if git is not available
+    commitCount = Math.floor(Date.now() / 1000) % MAX_FALLBACK_VERSION;
+  }
+  
+  // Prevent version downgrades by ensuring patch version never decreases
+  // This is critical when switching versioning strategies or when the manifest
+  // already contains a higher version (e.g., from previous full-repo commit counting)
+  const patch = Math.max(commitCount, currentPatch);
   
   // Generate new version
   const newVersion = `${major}.${minor}.${patch}`;
@@ -123,8 +173,11 @@ function updateManifestVersion(manifestPath) {
   console.log(`  Version: ${currentVersion} → ${newVersion}`);
   console.log(`  - Major: ${major} (from manifest)`);
   console.log(`  - Minor: ${minor} (from manifest)`);
-  console.log(`  - Patch: ${patch} (git commit count for extension)`);
-  console.log(`  - Tracked paths: ${trackedPaths.join(', ')}`);
+  console.log(`  - Patch: ${patch} (commits: ${commitCount}, current: ${currentPatch}, using max)`);
+  console.log(`  Extension paths tracked:`);
+  for (const path of extensionPaths) {
+    console.log(`    - ${path}`);
+  }
   
   // Update manifest with new version
   manifest.version = newVersion;
