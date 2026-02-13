@@ -1,0 +1,44 @@
+{
+  "manifestVersion": 1,
+  "id": "tag-manager",
+  "publisher": "notification-hub-publisher",
+  "version": "1.0.0",
+  "name": "Work Item Tag Manager",
+  "description": "A modern user interface for managing work item tags in Azure DevOps",
+  "public": false,
+  "categories": [
+    "Azure Boards"
+  ],
+  "targets": [
+    {
+      "id": "Microsoft.VisualStudio.Services"
+    }
+  ],
+  "icons": {
+    "default": "apps/tag-manager/dist/favicon.ico"
+  },
+  "contributions": [
+    {
+      "id": "tag-manager-hub",
+      "type": "ms.vss-web.hub",
+      "description": "Work Item Tag Manager hub",
+      "targets": [
+        "ms.vss-work-web.work-hub-group"
+      ],
+      "properties": {
+        "name": "Tag Manager",
+        "uri": "apps/tag-manager/dist/index.html"
+      }
+    }
+  ],
+  "scopes": [
+    "vso.work",
+    "vso.work_write"
+  ],
+  "files": [
+    {
+      "path": "apps/tag-manager/dist",
+      "addressable": true
+    }
+  ]
+}
