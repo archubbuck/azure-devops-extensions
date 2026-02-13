@@ -16,6 +16,11 @@
  * - Directories are determined from the manifest's "files" array
  * - Only changes to extension-specific files increment that extension's version
  * - This prevents unnecessary version bumps when other extensions are modified
+ * 
+ * Version floor protection:
+ * - The patch version uses MAX(git-commit-count, current-patch-version)
+ * - This prevents version downgrades when switching versioning strategies
+ * - Ensures versions are always monotonically increasing for marketplace compliance
  */
 
 import { readFileSync, writeFileSync, readdirSync } from 'fs';
@@ -81,9 +86,15 @@ function updateManifestVersion(manifestPath) {
   
   const major = parseInt(versionParts[0], 10);
   const minor = parseInt(versionParts[1], 10);
+  const currentPatch = versionParts.length >= 3 ? parseInt(versionParts[2], 10) : 0;
   
   if (isNaN(major) || isNaN(minor)) {
     throw new Error(`Invalid version numbers in: ${currentVersion}. Major and minor must be integers.`);
+  }
+  
+  // Validate current patch if it exists
+  if (versionParts.length >= 3 && isNaN(currentPatch)) {
+    throw new Error(`Invalid patch version in: ${currentVersion}. Patch must be an integer.`);
   }
   
   // Get the paths associated with this extension
@@ -119,7 +130,10 @@ function updateManifestVersion(manifestPath) {
     commitCount = Math.floor(Date.now() / 1000) % MAX_FALLBACK_VERSION;
   }
   
-  const patch = commitCount;
+  // Prevent version downgrades by ensuring patch version never decreases
+  // This is critical when switching versioning strategies or when the manifest
+  // already contains a higher version (e.g., from previous full-repo commit counting)
+  const patch = Math.max(commitCount, currentPatch);
   
   // Generate new version
   const newVersion = `${major}.${minor}.${patch}`;
@@ -128,7 +142,7 @@ function updateManifestVersion(manifestPath) {
   console.log(`  Version: ${currentVersion} → ${newVersion}`);
   console.log(`  - Major: ${major} (from manifest)`);
   console.log(`  - Minor: ${minor} (from manifest)`);
-  console.log(`  - Patch: ${patch} (commits affecting extension paths)`);
+  console.log(`  - Patch: ${patch} (commits: ${commitCount}, current: ${currentPatch}, using max)`);
   console.log(`  Extension paths tracked:`);
   for (const path of extensionPaths) {
     console.log(`    - ${path}`);
