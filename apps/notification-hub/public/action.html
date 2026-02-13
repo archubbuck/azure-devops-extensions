@@ -3,10 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <title>Notification Hub Action</title>
-    <script src="./SDK.min.js"></script>
   </head>
   <body>
-    <script>
+    <script type="module">
+      import * as SDK from './SDK.min.js';
+      
       // Enhanced logging helper
       function logInfo(message, data) {
         var timestamp = new Date().toISOString();
