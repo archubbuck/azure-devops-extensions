@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "notification-hub",
   "publisher": "notification-hub-publisher",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "name": "Notification Hub",
   "description": "A centralized notification hub for Azure DevOps that aggregates @mentions, PR comments, and work item updates",
   "public": false,
