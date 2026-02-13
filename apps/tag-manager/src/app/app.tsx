@@ -10,6 +10,11 @@ interface Tag {
   lastUpdated?: string;
 }
 
+interface ProjectInfo {
+  id: string;
+  name: string;
+}
+
 export function App() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [filteredTags, setFilteredTags] = useState<Tag[]>([]);
@@ -19,6 +24,7 @@ export function App() {
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [newTagName, setNewTagName] = useState('');
   const [renameTagId, setRenameTagId] = useState<string | null>(null);
   const [renameTagName, setRenameTagName] = useState('');
@@ -32,19 +38,28 @@ export function App() {
 
       const client = SDK.getClient(WorkItemTrackingRestClient);
       const context = SDK.getConfiguration();
-      const project = context.project || (await SDK.getService('ms.vss-tfs-web.tfs-page-data-service')).then((service: unknown) => (service as { getProjectInfo: () => unknown }).getProjectInfo());
       
-      let projectId: string;
-      if (typeof project === 'string') {
-        projectId = project;
-        setProjectName(project);
+      // Get project information
+      let projectInfo: ProjectInfo;
+      
+      if (context.project) {
+        // If project is directly available in context
+        if (typeof context.project === 'string') {
+          projectInfo = { id: context.project, name: context.project };
+        } else {
+          projectInfo = context.project as ProjectInfo;
+        }
       } else {
-        projectId = project.id;
-        setProjectName(project.name);
+        // Fall back to service to get project info
+        const pageDataService = await SDK.getService('ms.vss-tfs-web.tfs-page-data-service');
+        const serviceProjectInfo = await (pageDataService as { getProjectInfo: () => Promise<ProjectInfo> }).getProjectInfo();
+        projectInfo = serviceProjectInfo;
       }
+      
+      setProjectName(projectInfo.name);
 
       // Get all tags from the project
-      const workItemTags = await client.getTags(projectId);
+      const workItemTags = await client.getTags(projectInfo.id);
       
       const tagList: Tag[] = workItemTags.map((tag) => ({
         id: tag.id || tag.name,
@@ -92,22 +107,19 @@ export function App() {
   };
 
   // Create a new tag
+  // Note: In Azure DevOps, tags are automatically created when assigned to work items.
+  // This implementation adds the tag to local state only. In a production implementation,
+  // you would create or update a work item with this tag to persist it to Azure DevOps.
   const handleCreateTag = async () => {
     if (!newTagName.trim()) {
       return;
     }
 
     try {
-      // Create the tag by creating a work item tag reference
       const tagName = newTagName.trim();
       
-      // Note: In Azure DevOps, tags are created automatically when assigned to work items
-      // This is a simplified approach - in a real implementation, you would need to
-      // create or update a work item with this tag
-      
-      console.log('Creating tag:', tagName, 'for project:', projectName);
-      
-      // For now, add it to the local state
+      // For demonstration purposes, add to local state
+      // TODO: In production, create/update a work item with this tag to persist it
       const newTag: Tag = {
         id: `tag-${Date.now()}`,
         name: tagName,
@@ -125,17 +137,17 @@ export function App() {
   };
 
   // Rename a tag
+  // Note: Azure DevOps REST API doesn't support direct tag renaming.
+  // This implementation updates local state only. In a production implementation,
+  // you would need to update all work items that have the old tag to use the new tag name.
   const handleRenameTag = async () => {
     if (!renameTagId || !renameTagName.trim()) {
       return;
     }
 
     try {
-      // Note: Azure DevOps REST API doesn't support direct tag renaming
-      // This would typically require updating all work items with the old tag
-      console.log('Renaming tag:', renameTagId, 'to:', renameTagName);
-      
-      // Update in local state
+      // For demonstration purposes, update in local state
+      // TODO: In production, update all work items with the old tag to use the new tag name
       setTags(tags.map(tag => 
         tag.id === renameTagId 
           ? { ...tag, name: renameTagName.trim(), lastUpdated: new Date().toISOString() }
@@ -153,24 +165,24 @@ export function App() {
   };
 
   // Delete selected tags
+  // Note: Azure DevOps REST API doesn't support direct tag deletion.
+  // This implementation updates local state only. In a production implementation,
+  // you would need to remove the tags from all work items that use them.
   const handleDeleteTags = async () => {
     if (selectedTags.size === 0) {
       return;
     }
 
-    // eslint-disable-next-line no-restricted-globals
-    if (!confirm(`Are you sure you want to delete ${selectedTags.size} tag(s)?`)) {
-      return;
-    }
+    setShowDeleteModal(true);
+  };
 
+  const confirmDeleteTags = async () => {
     try {
-      // Note: Azure DevOps REST API doesn't support direct tag deletion
-      // This would typically require removing the tag from all work items
-      console.log('Deleting tags:', Array.from(selectedTags));
-      
-      // Update in local state
+      // For demonstration purposes, update in local state
+      // TODO: In production, remove the tags from all work items that use them
       setTags(tags.filter(tag => !selectedTags.has(tag.id)));
       setSelectedTags(new Set());
+      setShowDeleteModal(false);
     } catch (err) {
       console.error('Failed to delete tags:', err);
       setError(err instanceof Error ? err.message : 'Failed to delete tags');
@@ -359,6 +371,28 @@ export function App() {
                 disabled={!renameTagName.trim()}
               >
                 Rename
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Delete Tags</h2>
+            <p>Are you sure you want to delete {selectedTags.size} tag(s)?</p>
+            <p>This action cannot be undone.</p>
+            <div className="modal-actions">
+              <button className="btn" onClick={() => setShowDeleteModal(false)}>
+                Cancel
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={confirmDeleteTags}
+              >
+                Delete
               </button>
             </div>
           </div>
