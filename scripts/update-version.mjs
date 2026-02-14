@@ -37,6 +37,26 @@ const rootDir = join(__dirname, '..');
 const MAX_FALLBACK_VERSION = 10000;
 
 /**
+ * Decode HTML entities in a string
+ * @param {string} text - Text with HTML entities
+ * @returns {string} Decoded text
+ */
+function decodeHtmlEntities(text) {
+  const entities = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#39;': "'",
+    '&apos;': "'",
+    '&#x2F;': '/',
+    '&#x27;': "'"
+  };
+  
+  return text.replace(/&(?:amp|lt|gt|quot|#39|apos|#x2F|#x27);/g, (entity) => entities[entity] || entity);
+}
+
+/**
  * Extract the source directory paths from a manifest's files array
  * @param {object} manifest - The parsed manifest object
  * @returns {string[]} Array of source directory paths to track for versioning
@@ -106,7 +126,10 @@ function getMarketplaceVersion(publisherId, extensionId) {
       }
     );
     
-    const data = JSON.parse(output);
+    // Decode HTML entities that may be present in the JSON output
+    const decodedOutput = decodeHtmlEntities(output);
+    
+    const data = JSON.parse(decodedOutput);
     const version = data?.versions?.[0]?.version || null;
     return version;
   } catch (error) {
