@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "better-tag-manager",
   "publisher": "notification-hub-publisher",
-  "version": "10.0.33",
+  "version": "10.0.36",
   "name": "Better Tag Manager",
   "description": "A modern user interface for managing work item tags in Azure DevOps",
   "public": false,
@@ -41,7 +41,7 @@
     }
   ],
   "metadata": {
-    "lastVersionCommit": "42c8585d34277b98b496fc5ce05e14ca026467a8",
-    "lastVersionUpdate": "2026-02-14T05:51:28.756Z"
+    "lastVersionCommit": "2ad5a668efb74fa743ecb108d69e7c52b4e9c359",
+    "lastVersionUpdate": "2026-02-14T17:57:07.360Z"
   }
 }
