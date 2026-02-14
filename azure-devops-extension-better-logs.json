@@ -1,0 +1,52 @@
+{
+  "manifestVersion": 1,
+  "id": "better-logs",
+  "publisher": "notification-hub-publisher",
+  "version": "10.0.0",
+  "name": "Better Logs",
+  "description": "Centralized log management hub for Azure DevOps extensions. Captures and displays logs from all extensions in a unified interface.",
+  "public": false,
+  "categories": [
+    "Azure Boards",
+    "Azure Repos",
+    "Azure Pipelines"
+  ],
+  "targets": [
+    {
+      "id": "Microsoft.VisualStudio.Services"
+    }
+  ],
+  "icons": {
+    "default": "apps/better-logs/dist/favicon.ico"
+  },
+  "contributions": [
+    {
+      "id": "better-logs-hub",
+      "type": "ms.vss-web.hub",
+      "description": "Better Logs centralized logging hub",
+      "targets": [
+        "ms.vss-work-web.work-hub-group"
+      ],
+      "properties": {
+        "name": "Logs",
+        "uri": "apps/better-logs/dist/index.html"
+      }
+    }
+  ],
+  "scopes": [
+    "vso.work",
+    "vso.code",
+    "vso.build",
+    "vso.release"
+  ],
+  "files": [
+    {
+      "path": "apps/better-logs/dist",
+      "addressable": true
+    }
+  ],
+  "metadata": {
+    "lastVersionCommit": "",
+    "lastVersionUpdate": ""
+  }
+}
