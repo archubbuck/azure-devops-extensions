@@ -22,6 +22,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '..');
 
+// Length of response preview to include in error messages for debugging
+const ERROR_PREVIEW_LENGTH = 20;
+
 /**
  * Decode HTML entities in a string
  * @param {string} text - Text with HTML entities
@@ -40,7 +43,8 @@ function decodeHtmlEntities(text) {
   };
   
   // Replace known entities; unrecognized entities are left as-is (safe fallback)
-  return text.replace(/&(?:amp|lt|gt|quot|#39|apos|#x2F|#x27);/g, (entity) => entities[entity] || entity);
+  // Pattern matches both named (&amp;) and numeric (&#39;, &#x2F;) entities
+  return text.replace(/&(?:amp|lt|gt|quot|apos|#39|#x2F|#x27);/g, (entity) => entities[entity] || entity);
 }
 
 /**
@@ -86,7 +90,7 @@ function getMarketplaceVersion(publisherId, extensionId) {
     } catch (parseError) {
       // JSON parsing failed - log sanitized error without exposing full content
       // Include first few chars to help diagnose if it's HTML vs other format
-      const preview = decodedOutput.substring(0, 20).replace(/\s+/g, ' ');
+      const preview = decodedOutput.substring(0, ERROR_PREVIEW_LENGTH).replace(/\s+/g, ' ');
       console.error(`Warning: Could not parse marketplace response for ${publisherId}.${extensionId}: Invalid JSON format (starts with: "${preview}...")`);
       return null;
     }

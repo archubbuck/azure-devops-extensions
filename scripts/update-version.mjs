@@ -54,7 +54,8 @@ function decodeHtmlEntities(text) {
   };
   
   // Replace known entities; unrecognized entities are left as-is (safe fallback)
-  return text.replace(/&(?:amp|lt|gt|quot|#39|apos|#x2F|#x27);/g, (entity) => entities[entity] || entity);
+  // Pattern matches both named (&amp;) and numeric (&#39;, &#x2F;) entities
+  return text.replace(/&(?:amp|lt|gt|quot|apos|#39|#x2F|#x27);/g, (entity) => entities[entity] || entity);
 }
 
 /**
