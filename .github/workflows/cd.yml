@@ -124,12 +124,13 @@ jobs:
               
               # Check if it's an acceptable error (version conflict or already exists)
               # Azure DevOps TFX CLI error codes:
-              # - VS402962: Version already exists or must be higher than current
-              # - VS402904: Extension ID/name already exists in marketplace
-              if echo "$output" | grep -qiE "(version|VS402962).*must.*increase"; then
+              # - VS402962: Extension version already published / must be higher
+              # - VS402904: Extension with this version already exists
+              # Both indicate the extension is already deployed (acceptable outcome)
+              if echo "$output" | grep -qE "VS402962|version.+must.+be.+greater"; then
                 echo "ℹ️ Version already published (not an error)"
-              elif echo "$output" | grep -qiE "(extension|VS402904).*already (exists|published)"; then
-                echo "ℹ️ Extension already exists (not an error)"
+              elif echo "$output" | grep -qE "VS402904|already.+(published|exists)"; then
+                echo "ℹ️ Extension version already exists (not an error)"
               else
                 # Real error - log and count
                 echo "❌ Publishing failed with exit code $exit_code"

@@ -55,9 +55,9 @@ The new approach embraces simplicity:
 **Key Simplifications:**
 - Removed marketplace version querying (unreliable)
 - Removed HTML entity decoding (not needed)
-- Simpler change detection (just check if commits exist)
+- Simpler change detection (extension-specific paths)
 - Force update mode for CI/CD (always increment)
-- Version floor protection using `Math.max(counter, currentPatch + 1)`
+- Version floor protection using `Math.max(counter, currentPatch)`
 
 #### 3. Removed Scripts
 - Deleted `check-marketplace-version.mjs` (273 lines) - no longer needed
@@ -156,7 +156,7 @@ The new system is backward compatible:
 ### Expected Improvements
 
 #### Failure Rate
-- **Before**: Frequent failures (based on analysis of recent workflow runs showing ~3 of 17 recent runs failed)
+- **Before**: Frequent failures (~17.6% based on 3 of 17 recent runs)
 - **Expected After**: <5% failure rate (only genuine infrastructure failures)
 - **Rationale**: Removes unreliable marketplace API calls and complex error handling
 
@@ -235,16 +235,16 @@ Starting counter: 50
 Extension A: current 10.0.45 → new 10.0.50 (max(50, 45) = 50)
   Counter increments to 51
 
-Extension B: current 10.0.52 → new 10.0.52 (max(51, 52) = 52, no change needed)
-  Counter stays at 51 (not updated)
+Extension B: current 10.0.52 → skipped (no changes detected)
+  Counter stays at 51 (extension not updated)
 
 Extension C: current 10.0.10 → new 10.0.51 (max(51, 10) = 51)
   Counter increments to 52
 
-Final counter: 52
+Final counter: 52 (only incremented for actually updated extensions)
 ```
 
-Note: Counter only increments when an extension is actually updated, not when skipped.
+Note: Counter only increments when an extension is actually updated, not when skipped due to no changes.
 
 ## Conclusion
 

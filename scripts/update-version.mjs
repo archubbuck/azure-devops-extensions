@@ -89,7 +89,7 @@ function getExtensionPaths(manifest, manifestPath) {
   }
   
   // Always include the manifest file itself
-  const manifestRelPath = manifestPath.replace(rootDir + '/', '');
+  const manifestRelPath = manifestPath.replace(rootDir + '/', '').replace(rootDir + '\\', '');
   paths.add(manifestRelPath);
   
   return Array.from(paths);
@@ -159,8 +159,9 @@ function updateManifestVersion(manifestPath, versionCounter, forceUpdate) {
   
   // Calculate new patch version
   // Use the counter value, but respect any manually-set higher patch versions
-  // Note: Counter is incremented AFTER each update, so multiple extensions in
-  // the same run get sequential counter values
+  // Note: Counter is incremented AFTER each successful update (see line ~238)
+  // so extensions updated in the same run get sequential values (50, 51, 52...)
+  // Extensions that are skipped (no changes) don't increment the counter
   const patch = Math.max(versionCounter, currentPatch);
   const newVersion = `${major}.${minor}.${patch}`;
   
