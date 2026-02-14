@@ -39,6 +39,7 @@ function decodeHtmlEntities(text) {
     '&#x27;': "'"
   };
   
+  // Replace known entities; unrecognized entities are left as-is (safe fallback)
   return text.replace(/&(?:amp|lt|gt|quot|#39|apos|#x2F|#x27);/g, (entity) => entities[entity] || entity);
 }
 
@@ -84,7 +85,9 @@ function getMarketplaceVersion(publisherId, extensionId) {
       data = JSON.parse(decodedOutput);
     } catch (parseError) {
       // JSON parsing failed - log sanitized error without exposing full content
-      console.error(`Warning: Could not parse marketplace response for ${publisherId}.${extensionId}: Invalid JSON format`);
+      // Include first few chars to help diagnose if it's HTML vs other format
+      const preview = decodedOutput.substring(0, 20).replace(/\s+/g, ' ');
+      console.error(`Warning: Could not parse marketplace response for ${publisherId}.${extensionId}: Invalid JSON format (starts with: "${preview}...")`);
       return null;
     }
     
