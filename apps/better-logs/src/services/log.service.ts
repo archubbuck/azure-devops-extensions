@@ -10,6 +10,14 @@ class LogService {
   private logs: LogEntry[] = [];
   private readonly STORAGE_KEY = 'better-logs-entries';
   private readonly MAX_LOGS = 10000; // Keep last 10k logs
+  private isLogging = false; // Re-entrancy guard
+  private originalConsole = {
+    log: console.log,
+    info: console.info,
+    warn: console.warn,
+    error: console.error,
+    debug: console.debug,
+  };
 
   private constructor() {
     this.loadLogsFromStorage();
@@ -27,30 +35,22 @@ class LogService {
    * Intercept console logs to capture them centrally
    */
   private interceptConsoleLogs(): void {
-    const originalConsole = {
-      log: console.log,
-      info: console.info,
-      warn: console.warn,
-      error: console.error,
-      debug: console.debug,
-    };
-
     // Override console.log
     console.log = (...args: unknown[]) => {
       this.addLog(LogLevel.Info, 'console', this.formatMessage(args));
-      originalConsole.log.apply(console, args);
+      this.originalConsole.log.apply(console, args);
     };
 
     // Override console.info
     console.info = (...args: unknown[]) => {
       this.addLog(LogLevel.Info, 'console', this.formatMessage(args));
-      originalConsole.info.apply(console, args);
+      this.originalConsole.info.apply(console, args);
     };
 
     // Override console.warn
     console.warn = (...args: unknown[]) => {
       this.addLog(LogLevel.Warn, 'console', this.formatMessage(args));
-      originalConsole.warn.apply(console, args);
+      this.originalConsole.warn.apply(console, args);
     };
 
     // Override console.error
@@ -61,13 +61,13 @@ class LogService {
         this.formatMessage(args),
         args.length > 1 ? args.slice(1) : undefined
       );
-      originalConsole.error.apply(console, args);
+      this.originalConsole.error.apply(console, args);
     };
 
     // Override console.debug
     console.debug = (...args: unknown[]) => {
       this.addLog(LogLevel.Debug, 'console', this.formatMessage(args));
-      originalConsole.debug.apply(console, args);
+      this.originalConsole.debug.apply(console, args);
     };
   }
 
@@ -95,47 +95,58 @@ class LogService {
     data?: unknown,
     stackTrace?: string
   ): void {
-    const entry: LogEntry = {
-      id: this.generateId(),
-      timestamp: new Date(),
-      level,
-      source,
-      message,
-      data,
-      stackTrace,
-    };
-
-    // Try to enrich with Azure DevOps context
-    try {
-      const extensionContext = SDK.getExtensionContext();
-      entry.extensionId = extensionContext.id;
-      entry.extensionName = extensionContext.name;
-    } catch {
-      // SDK not available yet
+    // Re-entrancy guard to prevent infinite loops
+    if (this.isLogging) {
+      return;
     }
+
+    this.isLogging = true;
 
     try {
-      const user = SDK.getUser();
-      entry.userId = user.id;
-      entry.userName = user.displayName;
-    } catch {
-      // User info not available
+      const entry: LogEntry = {
+        id: this.generateId(),
+        timestamp: new Date(),
+        level,
+        source,
+        message,
+        data,
+        stackTrace,
+      };
+
+      // Try to enrich with Azure DevOps context
+      try {
+        const extensionContext = SDK.getExtensionContext();
+        entry.extensionId = extensionContext.id;
+        entry.extensionName = extensionContext.name;
+      } catch {
+        // SDK not available yet
+      }
+
+      try {
+        const user = SDK.getUser();
+        entry.userId = user.id;
+        entry.userName = user.displayName;
+      } catch {
+        // User info not available
+      }
+
+      try {
+        entry.url = window.location.href;
+      } catch {
+        // URL not available
+      }
+
+      this.logs.unshift(entry); // Add to beginning for newest first
+
+      // Limit log size
+      if (this.logs.length > this.MAX_LOGS) {
+        this.logs = this.logs.slice(0, this.MAX_LOGS);
+      }
+
+      this.saveLogsToStorage();
+    } finally {
+      this.isLogging = false;
     }
-
-    try {
-      entry.url = window.location.href;
-    } catch {
-      // URL not available
-    }
-
-    this.logs.unshift(entry); // Add to beginning for newest first
-
-    // Limit log size
-    if (this.logs.length > this.MAX_LOGS) {
-      this.logs = this.logs.slice(0, this.MAX_LOGS);
-    }
-
-    this.saveLogsToStorage();
   }
 
   /**
@@ -268,7 +279,8 @@ class LogService {
         }));
       }
     } catch (error) {
-      console.error('Failed to load logs from storage:', error);
+      // Use original console to avoid infinite loop
+      this.originalConsole.error('Failed to load logs from storage:', error);
     }
   }
 
@@ -279,7 +291,8 @@ class LogService {
     try {
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.logs));
     } catch (error) {
-      console.error('Failed to save logs to storage:', error);
+      // Use original console to avoid infinite loop
+      this.originalConsole.error('Failed to save logs to storage:', error);
     }
   }
 

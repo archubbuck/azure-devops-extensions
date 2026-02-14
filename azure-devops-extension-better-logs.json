@@ -33,12 +33,7 @@
       }
     }
   ],
-  "scopes": [
-    "vso.work",
-    "vso.code",
-    "vso.build",
-    "vso.release"
-  ],
+  "scopes": [],
   "files": [
     {
       "path": "apps/better-logs/dist",

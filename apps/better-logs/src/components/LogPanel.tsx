@@ -42,7 +42,7 @@ export function LogPanel({ onReady }: LogPanelProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-refresh
+  // Auto-refresh - also handles filter changes
   useEffect(() => {
     if (!autoRefresh) return;
 
@@ -53,12 +53,6 @@ export function LogPanel({ onReady }: LogPanelProps) {
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoRefresh, selectedLevels, searchText]);
-
-  // Manual refresh on filter change
-  useEffect(() => {
-    loadLogs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedLevels, searchText]);
 
   const handleToggleLevel = (level: LogLevel) => {
     setSelectedLevels((prev) => {

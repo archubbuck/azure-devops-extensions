@@ -16,7 +16,7 @@ export function App({ onReady }: AppProps) {
     }
   }, [onReady]);
 
-  return <LogPanel />;
+  return <LogPanel onReady={onReady} />;
 }
 
 export default App;

@@ -7,11 +7,11 @@
     "build:notification-hub": "npx nx build @notification-hub/notification-hub",
     "build:hello-azure": "npx nx build @hello-azure/hello-azure",
     "build:tag-manager": "npx nx build @tag-manager/tag-manager",
-    "build:better-logs": "npx nx build @notification-hub/better-logs",
+    "build:better-logs": "npx nx build @better-logs/better-logs",
     "dev": "npx nx serve @notification-hub/notification-hub",
     "dev:hello-azure": "npx nx serve @hello-azure/hello-azure",
     "dev:tag-manager": "npx nx serve @tag-manager/tag-manager",
-    "dev:better-logs": "npx nx serve @notification-hub/better-logs",
+    "dev:better-logs": "npx nx serve @better-logs/better-logs",
     "test": "npx nx run-many --target=test --all",
     "lint": "npx nx run-many --target=lint --all",
     "update-version": "node scripts/update-version.mjs"
