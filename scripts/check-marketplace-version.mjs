@@ -22,6 +22,31 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '..');
 
+// Length of response preview to include in error messages for debugging
+const ERROR_PREVIEW_LENGTH = 20;
+
+/**
+ * Decode HTML entities in a string
+ * @param {string} text - Text with HTML entities
+ * @returns {string} Decoded text
+ */
+function decodeHtmlEntities(text) {
+  const entities = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#39;': "'",
+    '&apos;': "'",
+    '&#x2F;': '/',
+    '&#x27;': "'"
+  };
+  
+  // Replace known entities; unrecognized entities are left as-is (safe fallback)
+  // Pattern matches both named (&amp;) and numeric (&#39;, &#x2F;) entities
+  return text.replace(/&(?:amp|lt|gt|quot|apos|#39|#x2F|#x27);/g, (entity) => entities[entity] || entity);
+}
+
 /**
  * Get current published version from marketplace using tfx CLI
  * @param {string} publisherId - The publisher ID
@@ -56,14 +81,31 @@ function getMarketplaceVersion(publisherId, extensionId) {
       }
     );
     
-    const data = JSON.parse(output);
+    // Decode HTML entities that may be present in the JSON output
+    const decodedOutput = decodeHtmlEntities(output);
+    
+    let data;
+    try {
+      data = JSON.parse(decodedOutput);
+    } catch (parseError) {
+      // JSON parsing failed - log sanitized error without exposing full content
+      // Include first few chars to help diagnose if it's HTML vs other format
+      const preview = decodedOutput.substring(0, ERROR_PREVIEW_LENGTH).replace(/\s+/g, ' ');
+      console.error(`Warning: Could not parse marketplace response for ${publisherId}.${extensionId}: Invalid JSON format (starts with: "${preview}...")`);
+      return null;
+    }
+    
     return data?.versions?.[0]?.version || null;
   } catch (error) {
     // Extension not found or other error
     if (error.stderr?.includes('not found') || error.stderr?.includes('does not exist')) {
       return null; // Extension not yet published
     }
-    console.error(`Warning: Could not query marketplace for ${publisherId}.${extensionId}:`, error.message);
+    // Log sanitized error message without exposing sensitive content
+    const errorMsg = error.code === 'ENOENT' 
+      ? 'tfx command not found - ensure tfx-cli is installed'
+      : 'Failed to query marketplace';
+    console.error(`Warning: Could not query marketplace for ${publisherId}.${extensionId}: ${errorMsg}`);
     return null;
   }
 }
