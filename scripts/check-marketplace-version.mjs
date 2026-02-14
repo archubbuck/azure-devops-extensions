@@ -39,12 +39,14 @@ function decodeHtmlEntities(text) {
     '&#39;': "'",
     '&apos;': "'",
     '&#x2F;': '/',
-    '&#x27;': "'"
+    '&#x27;': "'",
+    '&#x60;': '`',
+    '&nbsp;': ' '
   };
   
   // Replace known entities; unrecognized entities are left as-is (safe fallback)
-  // Pattern matches both named (&amp;) and numeric (&#39;, &#x2F;) entities
-  return text.replace(/&(?:amp|lt|gt|quot|apos|#39|#x2F|#x27);/g, (entity) => entities[entity] || entity);
+  // Pattern matches both named (&amp;, &nbsp;) and numeric (&#39;, &#x2F;, &#x60;) entities
+  return text.replace(/&(?:amp|lt|gt|quot|apos|nbsp|#39|#x2F|#x27|#x60);/g, (entity) => entities[entity] || entity);
 }
 
 /**
@@ -98,13 +100,19 @@ function getMarketplaceVersion(publisherId, extensionId) {
     return data?.versions?.[0]?.version || null;
   } catch (error) {
     // Extension not found or other error
-    if (error.stderr?.includes('not found') || error.stderr?.includes('does not exist')) {
+    // Decode HTML entities in stderr to check for error conditions
+    const decodedStderr = error.stderr ? decodeHtmlEntities(error.stderr) : '';
+    if (decodedStderr.includes('not found') || decodedStderr.includes('does not exist')) {
       return null; // Extension not yet published
     }
-    // Log sanitized error message without exposing sensitive content
+    
+    // Decode HTML entities in error message before logging
     const errorMsg = error.code === 'ENOENT' 
       ? 'tfx command not found - ensure tfx-cli is installed'
-      : 'Failed to query marketplace';
+      : error.message 
+        ? decodeHtmlEntities(error.message)
+        : 'Failed to query marketplace';
+    
     console.error(`Warning: Could not query marketplace for ${publisherId}.${extensionId}: ${errorMsg}`);
     return null;
   }
