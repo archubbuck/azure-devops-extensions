@@ -1,11 +1,16 @@
 import * as SDK from 'azure-devops-extension-sdk';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import './app.css';
 
-export function App() {
+interface AppProps {
+  onReady?: () => void;
+}
+
+export function App({ onReady }: AppProps) {
   const [userName, setUserName] = useState('');
   const [hostName, setHostName] = useState('');
   const [extensionVersion, setExtensionVersion] = useState('');
+  const hasNotifiedReady = useRef(false);
 
   useEffect(() => {
     // Get user information
@@ -34,7 +39,13 @@ export function App() {
       console.error('Failed to get extension context', err);
       setExtensionVersion('1.0.0');
     }
-  }, []);
+    
+    // Notify that the app is ready (only once)
+    if (!hasNotifiedReady.current && onReady) {
+      hasNotifiedReady.current = true;
+      onReady();
+    }
+  }, [onReady]);
 
   return (
     <div className="app-container">

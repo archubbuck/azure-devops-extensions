@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import * as SDK from 'azure-devops-extension-sdk';
 import { getClient, IProjectPageService } from 'azure-devops-extension-api';
 import { WorkItemTrackingRestClient } from 'azure-devops-extension-api/WorkItemTracking';
@@ -16,7 +16,11 @@ interface ProjectInfo {
   name: string;
 }
 
-export function App() {
+interface AppProps {
+  onReady?: () => void;
+}
+
+export function App({ onReady }: AppProps) {
   const [tags, setTags] = useState<Tag[]>([]);
   const [filteredTags, setFilteredTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +34,7 @@ export function App() {
   const [renameTagId, setRenameTagId] = useState<string | null>(null);
   const [renameTagName, setRenameTagName] = useState('');
   const [projectName, setProjectName] = useState('');
+  const hasNotifiedReady = useRef(false);
 
   // Fetch tags from Azure DevOps
   const fetchTags = useCallback(async () => {
@@ -75,12 +80,24 @@ export function App() {
       setTags(tagList);
       setFilteredTags(tagList);
       setLoading(false);
+      
+      // Notify that the app is ready after initial load
+      if (!hasNotifiedReady.current && onReady) {
+        hasNotifiedReady.current = true;
+        onReady();
+      }
     } catch (err) {
       console.error('Failed to fetch tags:', err);
       setError(err instanceof Error ? err.message : 'Failed to load tags');
       setLoading(false);
+      
+      // Still notify ready even on error so the extension doesn't hang
+      if (!hasNotifiedReady.current && onReady) {
+        hasNotifiedReady.current = true;
+        onReady();
+      }
     }
-  }, []);
+  }, [onReady]);
 
   useEffect(() => {
     fetchTags();

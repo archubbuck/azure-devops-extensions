@@ -24,7 +24,6 @@ log('Initializing Azure DevOps SDK...');
 const initStartTime = Date.now();
 
 SDK.init({
-  loaded: true, // Set to true to indicate extension has loaded successfully
   applyTheme: true,
 })
   .then(() => {
@@ -97,18 +96,21 @@ SDK.init({
     try {
       const root = ReactDOM.createRoot(rootElement);
 
+      // Create a callback to notify SDK when app is ready
+      const onAppReady = () => {
+        log('✓ App initial load complete, notifying SDK...');
+        SDK.notifyLoadSucceeded();
+        log('✓ Notified SDK of successful load');
+        log('=== Notification Hub Panel Ready ===');
+      };
+
       root.render(
         <StrictMode>
-          <App />
+          <App onReady={onAppReady} />
         </StrictMode>
       );
 
       log('✓ React app rendered successfully');
-      
-      // Notify SDK that load succeeded after render
-      SDK.notifyLoadSucceeded();
-      log('✓ Notified SDK of successful load');
-      log('=== Notification Hub Panel Ready ===');
     } catch (err) {
       error('Failed to render React app', err);
       SDK.notifyLoadFailed('Failed to render app');

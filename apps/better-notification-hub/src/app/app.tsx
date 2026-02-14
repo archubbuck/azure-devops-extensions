@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { NotificationService } from '../services/notification.service';
 import NotificationPanel from '../components/NotificationPanel';
 import './app.css';
@@ -13,10 +13,15 @@ const error = (message: string, err?: unknown) => {
   console.error(`[${timestamp}] [Notification Hub App ERROR] ${message}`, err || '');
 };
 
-export function App() {
+interface AppProps {
+  onReady?: () => void;
+}
+
+export function App({ onReady }: AppProps) {
   log('App component initializing...');
   
   const notificationService = NotificationService.getInstance();
+  const hasNotifiedReady = useRef(false);
 
   const refreshNotifications = useCallback(async () => {
     try {
@@ -26,10 +31,22 @@ export function App() {
       const duration = Date.now() - startTime;
       const count = notificationService.getUnreadCount();
       log(`Notifications refreshed in ${duration}ms. Unread count: ${count}`);
+      
+      // Notify that the app is ready after initial load
+      if (!hasNotifiedReady.current && onReady) {
+        hasNotifiedReady.current = true;
+        onReady();
+      }
     } catch (err) {
       error('Failed to refresh notifications', err);
+      
+      // Still notify ready even on error so the extension doesn't hang
+      if (!hasNotifiedReady.current && onReady) {
+        hasNotifiedReady.current = true;
+        onReady();
+      }
     }
-  }, [notificationService]);
+  }, [notificationService, onReady]);
 
   useEffect(() => {
     log('App mounted, loading initial notifications');
