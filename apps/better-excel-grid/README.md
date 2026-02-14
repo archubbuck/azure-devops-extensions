@@ -59,7 +59,8 @@ Supports editing of common work item fields:
 - Batch processing for multiple pending changes
 
 #### HTML Sanitization
-- Strips `<script>` tags from HTML content
+- Uses DOMPurify with whitelist of allowed tags (b, i, u, strong, em, p, br, ul, ol, li, a)
+- Removes all script tags, event handlers, and dangerous attributes
 - Preserves formatting tags (bold, italic, lists, etc.)
 - Safe rendering in grid cells
 

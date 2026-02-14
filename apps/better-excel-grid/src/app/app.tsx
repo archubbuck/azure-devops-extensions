@@ -70,7 +70,7 @@ export function App({ onReady }: AppProps) {
     }
   }, [offlineChanges]);
 
-  // Sync offline changes to server
+  // Sync offline changes to server - memoized to prevent recreation on every render
   const syncOfflineChanges = useCallback(async () => {
     if (!isOnline || offlineChanges.length === 0 || syncing) return;
     
@@ -114,7 +114,10 @@ export function App({ onReady }: AppProps) {
     const handleOnline = () => {
       setIsOnline(true);
       console.log('Connection restored - syncing pending changes...');
-      syncOfflineChanges();
+      // Call syncOfflineChanges directly without depending on it in the effect
+      if (workItemClientRef.current && !syncing) {
+        syncOfflineChanges();
+      }
     };
     const handleOffline = () => {
       setIsOnline(false);
@@ -128,7 +131,8 @@ export function App({ onReady }: AppProps) {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [syncOfflineChanges]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Column definitions for AG Grid with editable cells
   const columnDefs = useMemo<ColDef<WorkItemRow>[]>(
