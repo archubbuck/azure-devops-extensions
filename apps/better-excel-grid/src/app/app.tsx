@@ -116,10 +116,6 @@ export function App({ onReady }: AppProps) {
     const handleOnline = () => {
       setIsOnline(true);
       console.log('Connection restored - syncing pending changes...');
-      // Schedule sync on next tick to ensure state is updated
-      setTimeout(() => {
-        syncOfflineChanges();
-      }, 0);
     };
     const handleOffline = () => {
       setIsOnline(false);
@@ -133,8 +129,14 @@ export function App({ onReady }: AppProps) {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // When online and there are offline changes, sync them after state updates
+  useEffect(() => {
+    if (isOnline && offlineChanges.length > 0 && !syncing) {
+      syncOfflineChanges();
+    }
+  }, [isOnline, offlineChanges, syncing, syncOfflineChanges]);
 
   // Column definitions for AG Grid with editable cells
   const columnDefs = useMemo<ColDef<WorkItemRow>[]>(
@@ -267,13 +269,8 @@ export function App({ onReady }: AppProps) {
       };
 
       setOfflineChanges((prev) => [...prev, change]);
-
-      // If online, sync immediately
-      if (isOnline) {
-        syncOfflineChanges();
-      }
     },
-    [isOnline, syncOfflineChanges]
+    []
   );
 
   // Fetch work items from Azure DevOps
@@ -296,8 +293,7 @@ export function App({ onReady }: AppProps) {
       projectIdRef.current = project.id;
       setProjectName(project.name);
 
-      // Validate and escape project name to prevent WIQL injection
-      // Project names should only contain alphanumeric characters, spaces, hyphens, and underscores
+      // Escape single quotes in the project name to safely embed it in the WIQL string literal
       const escapedProjectName = project.name.replace(/'/g, "''");
       
       // Query for work items - get a large batch (up to MAX_WORK_ITEMS_TO_LOAD)
