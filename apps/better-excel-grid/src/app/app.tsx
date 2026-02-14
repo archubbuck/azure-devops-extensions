@@ -4,6 +4,7 @@ import { getClient, IProjectPageService } from 'azure-devops-extension-api';
 import { WorkItemTrackingRestClient, WorkItem } from 'azure-devops-extension-api/WorkItemTracking';
 import { AgGridReact } from 'ag-grid-react';
 import type { ColDef, GridReadyEvent, CellEditingStoppedEvent } from 'ag-grid-community';
+import DOMPurify from 'dompurify';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import './app.css';
@@ -127,7 +128,7 @@ export function App({ onReady }: AppProps) {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [offlineChanges, syncOfflineChanges]);
+  }, [syncOfflineChanges]);
 
   // Column definitions for AG Grid with editable cells
   const columnDefs = useMemo<ColDef<WorkItemRow>[]>(
@@ -201,14 +202,15 @@ export function App({ onReady }: AppProps) {
         },
         cellRenderer: (params: { value?: string }) => {
           if (!params.value) return '';
-          // Render HTML content safely (strip scripts but preserve formatting)
+          // Use DOMPurify to safely sanitize HTML content
+          const sanitized = DOMPurify.sanitize(params.value, {
+            ALLOWED_TAGS: ['b', 'i', 'u', 'strong', 'em', 'p', 'br', 'ul', 'ol', 'li', 'a'],
+            ALLOWED_ATTR: ['href', 'title'],
+            ALLOW_DATA_ATTR: false,
+          });
+          // Return text content for display in grid
           const div = document.createElement('div');
-          div.innerHTML = params.value;
-          // Remove script tags for security
-          const scripts = div.getElementsByTagName('script');
-          while (scripts.length > 0) {
-            scripts[0].parentNode?.removeChild(scripts[0]);
-          }
+          div.innerHTML = sanitized;
           return div.textContent || div.innerText || '';
         },
       },
@@ -288,9 +290,12 @@ export function App({ onReady }: AppProps) {
       projectIdRef.current = project.id;
       setProjectName(project.name);
 
+      // Escape project name to prevent WIQL injection
+      const escapedProjectName = project.name.replace(/'/g, "''");
+
       // Query for work items - get a large batch
       const wiql = {
-        query: `SELECT [System.Id], [System.Title], [System.WorkItemType], [System.State], [System.AssignedTo], [System.Tags], [System.Description], [Microsoft.VSTS.Common.Priority] FROM WorkItems WHERE [System.TeamProject] = '${project.name}' ORDER BY [System.Id] DESC`,
+        query: `SELECT [System.Id], [System.Title], [System.WorkItemType], [System.State], [System.AssignedTo], [System.Tags], [System.Description], [Microsoft.VSTS.Common.Priority] FROM WorkItems WHERE [System.TeamProject] = '${escapedProjectName}' ORDER BY [System.Id] DESC`,
       };
 
       const queryResult = await client.queryByWiql(wiql, { project: project.name });
@@ -335,7 +340,7 @@ export function App({ onReady }: AppProps) {
           title: fields['System.Title'] || '',
           workItemType: fields['System.WorkItemType'] || '',
           state: fields['System.State'] || '',
-          assignedTo: fields['System.AssignedTo']?.displayName || fields['System.AssignedTo'] || '',
+          assignedTo: fields['System.AssignedTo']?.displayName || '',
           description: fields['System.Description'] || '',
           tags: fields['System.Tags'] || '',
           priority: fields['Microsoft.VSTS.Common.Priority'] || 0,
