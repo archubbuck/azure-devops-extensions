@@ -85,7 +85,8 @@ export function App({ onReady }: AppProps) {
 
     const successfulSyncs: number[] = [];
     
-    for (const change of offlineChanges) {
+    for (let i = 0; i < offlineChanges.length; i++) {
+      const change = offlineChanges[i];
       try {
         const document = [
           {
@@ -96,7 +97,7 @@ export function App({ onReady }: AppProps) {
         ];
 
         await client.updateWorkItem(document, change.id);
-        successfulSyncs.push(offlineChanges.indexOf(change));
+        successfulSyncs.push(i);
         console.log(`Synced change for work item ${change.id}`);
       } catch (err) {
         console.error(`Failed to sync change for work item ${change.id}:`, err);
@@ -435,7 +436,7 @@ export function App({ onReady }: AppProps) {
       </div>
 
       {error && (
-        <div className="error-message">
+        <div className="error-message" role="alert">
           <span role="img" aria-label="Warning">
             ⚠️
           </span>{' '}
