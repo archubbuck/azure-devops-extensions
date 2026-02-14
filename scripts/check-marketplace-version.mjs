@@ -107,15 +107,11 @@ function getMarketplaceVersion(publisherId, extensionId) {
     }
     
     // Decode HTML entities in error message before logging
-    let errorMsg;
-    if (error.code === 'ENOENT') {
-      errorMsg = 'tfx command not found - ensure tfx-cli is installed';
-    } else if (error.message) {
-      // Decode HTML entities in the error message
-      errorMsg = decodeHtmlEntities(error.message);
-    } else {
-      errorMsg = 'Failed to query marketplace';
-    }
+    const errorMsg = error.code === 'ENOENT' 
+      ? 'tfx command not found - ensure tfx-cli is installed'
+      : error.message 
+        ? decodeHtmlEntities(error.message)
+        : 'Failed to query marketplace';
     
     console.error(`Warning: Could not query marketplace for ${publisherId}.${extensionId}: ${errorMsg}`);
     return null;
