@@ -43,28 +43,16 @@ export function App({ onReady }: AppProps) {
       setError(null);
 
       const client = getClient(WorkItemTrackingRestClient);
-      const context = SDK.getConfiguration();
       
-      // Get project information
-      let projectInfo: ProjectInfo;
+      // Get project information using the project page service
+      const projectService = await SDK.getService<IProjectPageService>('ms.vss-tfs-web.tfs-page-data-service');
+      const project = await projectService.getProject();
       
-      if (context.project) {
-        // If project is directly available in context
-        if (typeof context.project === 'string') {
-          projectInfo = { id: context.project, name: context.project };
-        } else {
-          projectInfo = context.project as ProjectInfo;
-        }
-      } else {
-        // Fall back to service to get project info
-        const projectService = await SDK.getService<IProjectPageService>('ms.vss-tfs-web.tfs-page-data-service');
-        const project = await projectService.getProject();
-        if (!project) {
-          throw new Error('Unable to determine current project');
-        }
-        projectInfo = { id: project.id, name: project.name };
+      if (!project) {
+        throw new Error('Unable to determine current project');
       }
       
+      const projectInfo: ProjectInfo = { id: project.id, name: project.name };
       setProjectName(projectInfo.name);
 
       // Get all tags from the project
