@@ -82,7 +82,11 @@ export function LogPanel({ onReady }: LogPanelProps) {
   };
 
   const handleExportLogs = () => {
-    const json = logService.exportLogs(filter);
+    const currentFilter: LogFilter = {
+      levels: selectedLevels,
+      searchText: searchText || undefined,
+    };
+    const json = logService.exportLogs(currentFilter);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
