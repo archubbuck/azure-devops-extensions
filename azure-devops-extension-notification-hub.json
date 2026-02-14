@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "better-notification-hub",
   "publisher": "notification-hub-publisher",
-  "version": "10.0.35",
+  "version": "10.0.38",
   "name": "Better Notification Hub",
   "description": "A centralized notification hub for Azure DevOps that aggregates @mentions, PR comments, and work item updates",
   "public": false,
@@ -57,7 +57,7 @@
     }
   ],
   "metadata": {
-    "lastVersionCommit": "2ad5a668efb74fa743ecb108d69e7c52b4e9c359",
-    "lastVersionUpdate": "2026-02-14T17:57:07.357Z"
+    "lastVersionCommit": "96a5eee3766c03040f00c4e94f09cbf8fc857b4c",
+    "lastVersionUpdate": "2026-02-14T18:15:34.725Z"
   }
 }
