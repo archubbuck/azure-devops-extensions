@@ -305,7 +305,8 @@ function updateManifestVersion(manifestPath, versionCounter, publisherId = null,
   }
   
   // Calculate new patch version using global counter
-  let patch = Math.max(versionCounter, currentPatch + 1);
+  // Use max to handle version floor protection
+  let patch = Math.max(versionCounter, currentPatch);
   
   // Also check marketplace version to ensure we're always higher
   const extensionId = manifest.id;

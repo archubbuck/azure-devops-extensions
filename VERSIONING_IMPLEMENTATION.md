@@ -125,8 +125,6 @@ Result: Only affected extension updated, versions remain unique
 
 #### Scenario 3: Modify Multiple Extensions
 ```
-#### Scenario 3: Modify Multiple Extensions
-```
 Initial state (counter=14):
   - hello-azure: 10.0.13
   - notification-hub: 10.0.11
