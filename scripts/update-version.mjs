@@ -68,6 +68,34 @@ function getCurrentCommit() {
 }
 
 /**
+ * Extract the source directory paths from a manifest
+ */
+function getExtensionPaths(manifest, manifestPath) {
+  const paths = new Set();
+  
+  // Extract paths from the files array
+  if (manifest.files && Array.isArray(manifest.files)) {
+    for (const file of manifest.files) {
+      if (file.path && typeof file.path === 'string') {
+        // Extract the app directory path (e.g., 'apps/notification-hub/dist' -> 'apps/notification-hub/')
+        const pathParts = file.path.split('/');
+        if (pathParts.length >= 2 && pathParts[0] === 'apps') {
+          paths.add(`${pathParts[0]}/${pathParts[1]}/`);
+        } else {
+          paths.add(file.path);
+        }
+      }
+    }
+  }
+  
+  // Always include the manifest file itself
+  const manifestRelPath = manifestPath.replace(rootDir + '/', '');
+  paths.add(manifestRelPath);
+  
+  return Array.from(paths);
+}
+
+/**
  * Update a single manifest with new version
  */
 function updateManifestVersion(manifestPath, versionCounter, forceUpdate) {
@@ -105,8 +133,11 @@ function updateManifestVersion(manifestPath, versionCounter, forceUpdate) {
       shouldUpdate = true; // No last commit recorded
     } else {
       try {
-        // Check if there are new commits
-        const commits = execFileSync('git', ['log', `${lastCommit}..HEAD`, '--oneline'], {
+        // Get extension paths from manifest to check for changes
+        const extensionPaths = getExtensionPaths(manifest, manifestPath);
+        
+        // Check if there are new commits affecting this extension's paths
+        const commits = execFileSync('git', ['log', `${lastCommit}..HEAD`, '--oneline', '--', ...extensionPaths], {
           cwd: rootDir,
           encoding: 'utf8'
         }).trim();
@@ -126,8 +157,8 @@ function updateManifestVersion(manifestPath, versionCounter, forceUpdate) {
     };
   }
   
-  // Use version counter, but ensure it's higher than current patch
-  const patch = Math.max(versionCounter, currentPatch + 1);
+  // Use version counter, but ensure it's always higher than current patch
+  const patch = Math.max(versionCounter, currentPatch);
   const newVersion = `${major}.${minor}.${patch}`;
   
   console.log(`   New:     ${newVersion}`);

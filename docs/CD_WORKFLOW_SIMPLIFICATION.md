@@ -157,7 +157,7 @@ The new system is backward compatible:
 
 #### Failure Rate
 - **Before**: ~18% failure rate
-- **After**: <5% (only real infrastructure failures)
+- **Expected After**: <5% (only real infrastructure failures)
 
 #### Deployment Time
 - **Before**: 3-5 minutes with retries

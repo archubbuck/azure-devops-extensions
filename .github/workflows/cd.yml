@@ -57,7 +57,13 @@ jobs:
           if [ -n "$(git status --porcelain)" ]; then
             git add azure-devops-extension-*.json .version-counter
             git commit -m "chore: bump extension versions [skip ci]"
-            git push
+            
+            # Push with retry on failure
+            if ! git push; then
+              echo "❌ Failed to push version updates (may be due to concurrent workflow)"
+              echo "   This could happen if multiple workflows are running simultaneously"
+              exit 1
+            fi
             echo "✅ Version updates committed"
           else
             echo "ℹ️ No version changes to commit"
@@ -114,9 +120,10 @@ jobs:
               exit_code=$?
               
               # Check if it's an acceptable error (version conflict or already exists)
-              if echo "$output" | grep -qi "version.*must.*increase"; then
+              # TFX CLI returns specific error messages for these cases
+              if echo "$output" | grep -qiE "(version|VS402962).*must.*increase"; then
                 echo "ℹ️ Version already published (not an error)"
-              elif echo "$output" | grep -qi "already.*exists"; then
+              elif echo "$output" | grep -qiE "(extension|VS402904).*already (exists|published)"; then
                 echo "ℹ️ Extension already exists (not an error)"
               else
                 # Real error - log and count
