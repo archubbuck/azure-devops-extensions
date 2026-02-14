@@ -4,26 +4,32 @@
  * Automatic version updater for Azure DevOps extensions
  * 
  * This script automatically updates the version in all extension manifests
- * based on git history to prevent version conflicts during publishing.
+ * using a global version counter to guarantee unique, incrementing versions.
  * 
  * Versioning strategy:
  * - MAJOR.MINOR.PATCH format (semantic versioning)
  * - MAJOR.MINOR from manifest files (manually controlled)
- * - PATCH auto-incremented based on per-extension git commit count
+ * - PATCH uses a global counter that increments for each deployment
  * 
- * Per-extension versioning:
- * - Each extension's version is based on commits that affect files in its directory
- * - Directories are determined from the manifest's "files" array
- * - Only changes to extension-specific files increment that extension's version
- * - This prevents unnecessary version bumps when other extensions are modified
+ * Global counter approach:
+ * - Uses a .version-counter file to track the last used version number
+ * - Counter increments for each build affecting any extension
+ * - Only affected extensions get the new counter value
+ * - Guarantees unique versions across all extensions
+ * - Never decreases, preventing version downgrades
+ * 
+ * Change detection:
+ * - Detects which extensions have changes since last version update
+ * - Only affected extensions get version bumps
+ * - Uses git history and stored metadata for tracking
  * 
  * Version floor protection:
- * - The patch version uses MAX(git-commit-count, current-patch-version)
- * - This prevents version downgrades when switching versioning strategies
- * - Ensures versions are always monotonically increasing for marketplace compliance
+ * - Ensures versions never decrease (max of counter, current, marketplace)
+ * - Marketplace versions always respected when PUBLISHER_ID is set
+ * - Handles transitions from old versioning strategies gracefully
  */
 
-import { readFileSync, writeFileSync, readdirSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync } from 'fs';
 import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -32,9 +38,45 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '..');
 
+// Path to the global version counter file
+const VERSION_COUNTER_FILE = join(rootDir, '.version-counter');
+
 // Maximum fallback version for timestamp-based versioning when git is unavailable
 // Limits to 4 digits (0-9999) to keep version numbers reasonable
 const MAX_FALLBACK_VERSION = 10000;
+
+/**
+ * Read the global version counter
+ * @returns {number} Current counter value
+ */
+function readVersionCounter() {
+  try {
+    if (existsSync(VERSION_COUNTER_FILE)) {
+      const content = readFileSync(VERSION_COUNTER_FILE, 'utf8').trim();
+      const counter = parseInt(content, 10);
+      if (!isNaN(counter) && counter > 0) {
+        return counter;
+      }
+    }
+  } catch (error) {
+    console.error(`Warning: Could not read version counter:`, error.message);
+  }
+  
+  // Default to 1 if file doesn't exist or is invalid
+  return 1;
+}
+
+/**
+ * Write the global version counter
+ * @param {number} counter - New counter value
+ */
+function writeVersionCounter(counter) {
+  try {
+    writeFileSync(VERSION_COUNTER_FILE, `${counter}\n`, 'utf8');
+  } catch (error) {
+    console.error(`Warning: Could not write version counter:`, error.message);
+  }
+}
 
 /**
  * Decode HTML entities in a string
@@ -154,7 +196,52 @@ function parseVersion(version) {
   };
 }
 
-function updateManifestVersion(manifestPath, publisherId = null) {
+/**
+ * Get the current HEAD commit hash
+ * @returns {string|null} Current commit hash or null if unavailable
+ */
+function getCurrentCommit() {
+  try {
+    const hash = execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: rootDir,
+      encoding: 'utf8'
+    }).trim();
+    return hash;
+  } catch (error) {
+    console.error(`Warning: Could not get current commit:`, error.message);
+    return null;
+  }
+}
+
+/**
+ * Check if an extension has changes since its last version update
+ * @param {string[]} extensionPaths - Paths to check for changes
+ * @param {string|null} lastCommit - Last commit hash when version was updated
+ * @returns {boolean} True if extension has changes
+ */
+function hasExtensionChanges(extensionPaths, lastCommit) {
+  if (!lastCommit) {
+    // No last commit recorded, assume changes exist
+    return true;
+  }
+  
+  try {
+    // Check if there are any commits affecting these paths since lastCommit
+    const args = ['log', `${lastCommit}..HEAD`, '--oneline', '--', ...extensionPaths];
+    const output = execFileSync('git', args, { 
+      cwd: rootDir,
+      encoding: 'utf8' 
+    }).trim();
+    
+    return output.length > 0; // If output exists, there are changes
+  } catch (error) {
+    console.error(`Warning: Could not check for changes:`, error.message);
+    // On error, assume changes exist to be safe
+    return true;
+  }
+}
+
+function updateManifestVersion(manifestPath, versionCounter, publisherId = null, forceUpdate = false) {
   // Read the current manifest
   const manifestContent = readFileSync(manifestPath, 'utf8');
   const manifest = JSON.parse(manifestContent);
@@ -196,27 +283,30 @@ function updateManifestVersion(manifestPath, publisherId = null) {
     throw new Error(`No file paths found in manifest ${manifestPath}. Cannot determine extension directory.`);
   }
   
-  // Calculate commit count based on changes to extension-specific paths
-  // Use a single git command with all paths (union) to ensure any change to any path increments the version
-  // This ensures monotonic version increments when any tracked path changes
-  let commitCount = 0;
-  try {
-    const args = ['rev-list', '--count', 'HEAD', '--', ...extensionPaths];
-    const count = execFileSync('git', args, { 
-      cwd: rootDir,
-      encoding: 'utf8' 
-    }).trim();
-    commitCount = parseInt(count, 10);
-  } catch (error) {
-    console.error(`Warning: Could not get git commit count for paths:`, error.message);
-    // Fallback to timestamp-based versioning if git is not available
-    commitCount = Math.floor(Date.now() / 1000) % MAX_FALLBACK_VERSION;
+  // Check if this extension has changes since last version
+  const lastCommit = manifest.metadata?.lastVersionCommit || null;
+  const hasChanges = forceUpdate || hasExtensionChanges(extensionPaths, lastCommit);
+  
+  console.log(`\nProcessing ${manifestPath}`);
+  console.log(`  Extension ID: ${manifest.id}`);
+  console.log(`  Current version: ${currentVersion}`);
+  console.log(`  Last version commit: ${lastCommit ? lastCommit.substring(0, 8) : 'N/A'}`);
+  console.log(`  Has changes: ${hasChanges ? 'Yes' : 'No'}`);
+  
+  // If no changes, keep current version
+  if (!hasChanges) {
+    console.log(`  ⏭️  Skipping: No changes detected since last version update`);
+    return {
+      extensionId: manifest.id,
+      oldVersion: currentVersion,
+      newVersion: currentVersion,
+      updated: false
+    };
   }
   
-  // Prevent version downgrades by ensuring patch version never decreases
-  // This is critical when switching versioning strategies or when the manifest
-  // already contains a higher version (e.g., from previous full-repo commit counting)
-  let patch = Math.max(commitCount, currentPatch);
+  // Calculate new patch version using global counter
+  // Use max to handle version floor protection
+  let patch = Math.max(versionCounter, currentPatch);
   
   // Also check marketplace version to ensure we're always higher
   const extensionId = manifest.id;
@@ -243,11 +333,10 @@ function updateManifestVersion(manifestPath, publisherId = null) {
   // Generate new version
   const newVersion = `${major}.${minor}.${patch}`;
   
-  console.log(`\nUpdating ${manifestPath}`);
-  console.log(`  Version: ${currentVersion} → ${newVersion}`);
+  console.log(`  New version: ${newVersion}`);
   console.log(`  - Major: ${major} (from manifest)`);
   console.log(`  - Minor: ${minor} (from manifest)`);
-  console.log(`  - Patch: ${patch} (commits: ${commitCount}, current: ${currentPatch}, using max)`);
+  console.log(`  - Patch: ${patch} (counter: ${versionCounter}, current: ${currentPatch}, marketplace: ${marketplaceVersion ? parseVersion(marketplaceVersion).patch : 'N/A'})`);
   console.log(`  Extension paths tracked:`);
   for (const path of extensionPaths) {
     console.log(`    - ${path}`);
@@ -255,6 +344,16 @@ function updateManifestVersion(manifestPath, publisherId = null) {
   
   // Update manifest with new version
   manifest.version = newVersion;
+  
+  // Store metadata for change tracking
+  if (!manifest.metadata) {
+    manifest.metadata = {};
+  }
+  const currentCommit = getCurrentCommit();
+  if (currentCommit) {
+    manifest.metadata.lastVersionCommit = currentCommit;
+    manifest.metadata.lastVersionUpdate = new Date().toISOString();
+  }
   
   // Write back to file with nice formatting
   writeFileSync(
@@ -265,19 +364,38 @@ function updateManifestVersion(manifestPath, publisherId = null) {
   
   console.log(`  ✓ Version updated successfully`);
   
-  return newVersion;
+  return {
+    extensionId: manifest.id,
+    oldVersion: currentVersion,
+    newVersion: newVersion,
+    updated: true
+  };
 }
 
 function updateAllVersions() {
   // Get publisher ID from environment if available
   const publisherId = process.env.PUBLISHER_ID || null;
+  const forceUpdate = process.env.FORCE_VERSION_UPDATE === 'true';
+  
+  console.log('='.repeat(70));
+  console.log('Azure DevOps Extensions - Automatic Versioning');
+  console.log('='.repeat(70));
+  console.log('');
   
   if (publisherId) {
-    console.log(`Using publisher ID: ${publisherId} for marketplace version checks`);
+    console.log(`Publisher ID: ${publisherId} (marketplace version checks enabled)`);
   } else {
-    console.log(`No PUBLISHER_ID set - skipping marketplace version checks`);
+    console.log(`Publisher ID: Not set (skipping marketplace version checks)`);
+  }
+  
+  if (forceUpdate) {
+    console.log(`Force update: Enabled (all extensions will be updated)`);
   }
   console.log('');
+  
+  // Get current version counter
+  let versionCounter = readVersionCounter();
+  console.log(`Starting version counter: ${versionCounter}`);
   
   // Find all azure-devops-extension-*.json files
   const files = readdirSync(rootDir);
@@ -289,28 +407,61 @@ function updateAllVersions() {
     throw new Error('No extension manifest files found (azure-devops-extension-*.json)');
   }
   
-  console.log(`Found ${manifestFiles.length} extension manifest(s) to update:`);
+  console.log(`Found ${manifestFiles.length} extension manifest(s) to check:`);
   manifestFiles.forEach(file => console.log(`  - ${file}`));
+  console.log('');
   
-  const updatedVersions = {};
+  const results = [];
   
+  // Process each manifest
   for (const file of manifestFiles) {
     const manifestPath = join(rootDir, file);
     try {
-      const newVersion = updateManifestVersion(manifestPath, publisherId);
-      updatedVersions[file] = newVersion;
+      const result = updateManifestVersion(manifestPath, versionCounter, publisherId, forceUpdate);
+      results.push(result);
+      
+      // If extension was updated, increment counter for next extension
+      if (result.updated) {
+        versionCounter++;
+        writeVersionCounter(versionCounter);
+      }
     } catch (error) {
       console.error(`Error updating ${file}:`, error.message);
       throw error;
     }
   }
   
-  console.log('\n✓ All extension versions updated successfully:');
-  for (const [file, version] of Object.entries(updatedVersions)) {
-    console.log(`  - ${file}: ${version}`);
+  // Summary
+  console.log('');
+  console.log('='.repeat(70));
+  console.log('Summary');
+  console.log('='.repeat(70));
+  
+  const updated = results.filter(r => r.updated);
+  const skipped = results.filter(r => !r.updated);
+  
+  if (updated.length > 0) {
+    console.log(`\n✅ Updated extensions (${updated.length}):`);
+    updated.forEach(r => {
+      console.log(`  - ${r.extensionId}: ${r.oldVersion} → ${r.newVersion}`);
+    });
   }
   
-  return updatedVersions;
+  if (skipped.length > 0) {
+    console.log(`\n⏭️  Skipped extensions (${skipped.length}):`);
+    skipped.forEach(r => {
+      console.log(`  - ${r.extensionId}: ${r.oldVersion} (no changes detected)`);
+    });
+  }
+  
+  if (updated.length === 0) {
+    console.log('\n⏭️  No extensions updated (no changes detected)');
+  } else {
+    console.log(`\n✓ Successfully updated ${updated.length} extension(s)`);
+    console.log(`Final version counter: ${versionCounter}`);
+  }
+  
+  return results;
 }
 
 // Run the update
