@@ -157,7 +157,10 @@ function updateManifestVersion(manifestPath, versionCounter, forceUpdate) {
     };
   }
   
-  // Use version counter, but ensure it's always higher than current patch
+  // Calculate new patch version
+  // Use the counter value, but respect any manually-set higher patch versions
+  // Note: Counter is incremented AFTER each update, so multiple extensions in
+  // the same run get sequential counter values
   const patch = Math.max(versionCounter, currentPatch);
   const newVersion = `${major}.${minor}.${patch}`;
   

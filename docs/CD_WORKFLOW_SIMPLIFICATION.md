@@ -2,7 +2,7 @@
 
 ## Problem
 
-The CD (Continuous Deployment) workflow was extremely flaky with a 17.6% failure rate. The root causes were:
+The CD workflow was extremely flaky with frequent failures due to:
 
 ### 1. **Excessive Complexity**
 - 302 lines of embedded bash in the workflow YAML
@@ -71,7 +71,7 @@ The new approach embraces simplicity:
 2. For each extension:
    - Check if force update (FORCE_VERSION_UPDATE=true in CI)
    - Or check if new commits exist since last version
-   - If update needed: use max(counter, currentPatch + 1)
+   - If update needed: use max(counter, currentPatch)
    - Increment counter for next extension
 3. Commit version changes back to repo
 ```
@@ -156,8 +156,9 @@ The new system is backward compatible:
 ### Expected Improvements
 
 #### Failure Rate
-- **Before**: ~18% failure rate
-- **Expected After**: <5% (only real infrastructure failures)
+- **Before**: Frequent failures (based on analysis of recent workflow runs showing ~3 of 17 recent runs failed)
+- **Expected After**: <5% failure rate (only genuine infrastructure failures)
+- **Rationale**: Removes unreliable marketplace API calls and complex error handling
 
 #### Deployment Time
 - **Before**: 3-5 minutes with retries
@@ -217,16 +218,33 @@ steps:
 Format: `MAJOR.MINOR.PATCH`
 - **MAJOR.MINOR**: Manually set in manifests (semantic versioning)
 - **PATCH**: Auto-incremented global counter
-- **Floor**: `max(counter, currentPatch + 1)`
+- **Floor**: `max(counter, currentPatch)` - respects both counter and manually-set patches
+
+**How it works:**
+- Counter starts at current value (e.g., 50)
+- For each extension needing update:
+  - Calculate: `patch = max(counter, currentPatch)`
+  - This uses the counter but respects manual overrides
+  - After update: counter increments for next extension
+- Result: Sequential versions within a deploy, no downgrades
 
 Example:
 ```
-Counter: 50
-Extension A current: 10.0.45 → New: 10.0.50
-Extension B current: 10.0.52 → New: 10.0.53 (max(50, 52+1))
-Extension C current: 10.0.10 → New: 10.0.50
-Final counter: 53
+Starting counter: 50
+
+Extension A: current 10.0.45 → new 10.0.50 (max(50, 45) = 50)
+  Counter increments to 51
+
+Extension B: current 10.0.52 → new 10.0.52 (max(51, 52) = 52, no change needed)
+  Counter stays at 51 (not updated)
+
+Extension C: current 10.0.10 → new 10.0.51 (max(51, 10) = 51)
+  Counter increments to 52
+
+Final counter: 52
 ```
+
+Note: Counter only increments when an extension is actually updated, not when skipped.
 
 ## Conclusion
 

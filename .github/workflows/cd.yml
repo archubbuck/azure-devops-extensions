@@ -60,8 +60,11 @@ jobs:
             
             # Push with retry on failure
             if ! git push; then
-              echo "❌ Failed to push version updates (may be due to concurrent workflow)"
-              echo "   This could happen if multiple workflows are running simultaneously"
+              echo "❌ Failed to push version updates"
+              echo "   Possible causes:"
+              echo "   - Concurrent workflow is running (check https://github.com/${{ github.repository }}/actions)"
+              echo "   - Network issue (will retry on next workflow run)"
+              echo "   - Branch protection rules (check repository settings)"
               exit 1
             fi
             echo "✅ Version updates committed"
@@ -120,7 +123,9 @@ jobs:
               exit_code=$?
               
               # Check if it's an acceptable error (version conflict or already exists)
-              # TFX CLI returns specific error messages for these cases
+              # Azure DevOps TFX CLI error codes:
+              # - VS402962: Version already exists or must be higher than current
+              # - VS402904: Extension ID/name already exists in marketplace
               if echo "$output" | grep -qiE "(version|VS402962).*must.*increase"; then
                 echo "ℹ️ Version already published (not an error)"
               elif echo "$output" | grep -qiE "(extension|VS402904).*already (exists|published)"; then

@@ -140,7 +140,7 @@ All extensions use automatic versioning:
 - **Format**: `MAJOR.MINOR.PATCH` (semantic versioning)
 - **MAJOR.MINOR**: Manually controlled in `azure-devops-extension-*.json` files
 - **PATCH**: Auto-incremented global counter (`.version-counter` file)
-- **Version Floor**: `Math.max(counter, currentPatch + 1)` ensures no downgrades
+- **Version Floor**: `Math.max(counter, currentPatch)` ensures no downgrades
 
 To manually update versions locally:
 ```bash
