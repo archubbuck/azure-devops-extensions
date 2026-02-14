@@ -50,7 +50,7 @@ npm install
 npm run dev:tag-manager
 
 # Lint the code
-npx nx lint @tag-manager/tag-manager
+npx nx lint @better-tag-manager/better-tag-manager
 
 # Build for production
 npm run build:tag-manager
@@ -59,7 +59,7 @@ npm run build:tag-manager
 ### Project Structure
 
 ```
-apps/tag-manager/
+apps/better-tag-manager/
 ├── public/
 │   ├── SDK.min.js          # Azure DevOps Extension SDK
 │   └── favicon.ico         # Extension icon

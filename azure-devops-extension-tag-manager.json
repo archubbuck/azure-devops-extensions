@@ -15,7 +15,7 @@
     }
   ],
   "icons": {
-    "default": "apps/tag-manager/dist/favicon.ico"
+    "default": "apps/better-tag-manager/dist/favicon.ico"
   },
   "contributions": [
     {
@@ -27,7 +27,7 @@
       ],
       "properties": {
         "name": "Tag Manager",
-        "uri": "apps/tag-manager/dist/index.html"
+        "uri": "apps/better-tag-manager/dist/index.html"
       }
     }
   ],
@@ -36,7 +36,7 @@
   ],
   "files": [
     {
-      "path": "apps/tag-manager/dist",
+      "path": "apps/better-tag-manager/dist",
       "addressable": true
     }
   ],
