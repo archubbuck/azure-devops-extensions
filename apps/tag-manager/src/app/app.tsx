@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import * as SDK from 'azure-devops-extension-sdk';
-import { IProjectPageService } from 'azure-devops-extension-api';
+import { getClient, IProjectPageService } from 'azure-devops-extension-api';
 import { WorkItemTrackingRestClient } from 'azure-devops-extension-api/WorkItemTracking';
 import './app.css';
 
@@ -37,7 +37,7 @@ export function App() {
       setLoading(true);
       setError(null);
 
-      const client = SDK.getClient(WorkItemTrackingRestClient);
+      const client = getClient(WorkItemTrackingRestClient);
       const context = SDK.getConfiguration();
       
       // Get project information
