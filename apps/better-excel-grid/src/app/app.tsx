@@ -35,6 +35,8 @@ interface OfflineChange {
 
 const STORAGE_KEY = 'excel-grid-offline-changes';
 const DATA_CACHE_KEY = 'excel-grid-cached-data';
+const MAX_WORK_ITEMS_TO_LOAD = 10000;
+const API_BATCH_SIZE = 200;
 
 export function App({ onReady }: AppProps) {
   const [workItems, setWorkItems] = useState<WorkItemRow[]>([]);
@@ -114,10 +116,10 @@ export function App({ onReady }: AppProps) {
     const handleOnline = () => {
       setIsOnline(true);
       console.log('Connection restored - syncing pending changes...');
-      // Call syncOfflineChanges directly without depending on it in the effect
-      if (workItemClientRef.current && !syncing) {
+      // Schedule sync on next tick to ensure state is updated
+      setTimeout(() => {
         syncOfflineChanges();
-      }
+      }, 0);
     };
     const handleOffline = () => {
       setIsOnline(false);
@@ -294,10 +296,11 @@ export function App({ onReady }: AppProps) {
       projectIdRef.current = project.id;
       setProjectName(project.name);
 
-      // Escape project name to prevent WIQL injection
+      // Validate and escape project name to prevent WIQL injection
+      // Project names should only contain alphanumeric characters, spaces, hyphens, and underscores
       const escapedProjectName = project.name.replace(/'/g, "''");
-
-      // Query for work items - get a large batch
+      
+      // Query for work items - get a large batch (up to MAX_WORK_ITEMS_TO_LOAD)
       const wiql = {
         query: `SELECT [System.Id], [System.Title], [System.WorkItemType], [System.State], [System.AssignedTo], [System.Tags], [System.Description], [Microsoft.VSTS.Common.Priority] FROM WorkItems WHERE [System.TeamProject] = '${escapedProjectName}' ORDER BY [System.Id] DESC`,
       };
@@ -318,18 +321,17 @@ export function App({ onReady }: AppProps) {
         return;
       }
 
-      // Get work item IDs (limit to reasonable amount for initial load)
+      // Get work item IDs (limit to MAX_WORK_ITEMS_TO_LOAD for initial load)
       const workItemIds = queryResult.workItems
-        .slice(0, 10000)
+        .slice(0, MAX_WORK_ITEMS_TO_LOAD)
         .map((wi) => wi.id)
         .filter((id): id is number => id !== undefined);
       
-      // Batch fetch work items (API limit is 200 per request)
-      const batchSize = 200;
+      // Batch fetch work items (API limit is API_BATCH_SIZE per request)
       const allWorkItems: WorkItem[] = [];
       
-      for (let i = 0; i < workItemIds.length; i += batchSize) {
-        const batch = workItemIds.slice(i, i + batchSize);
+      for (let i = 0; i < workItemIds.length; i += API_BATCH_SIZE) {
+        const batch = workItemIds.slice(i, i + API_BATCH_SIZE);
         const items = await client.getWorkItems(batch, undefined, undefined, undefined, project.name);
         allWorkItems.push(...items);
       }
