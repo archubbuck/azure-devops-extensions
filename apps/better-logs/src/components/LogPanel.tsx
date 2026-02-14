@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import LogService from '../services/log.service';
 import { LogEntry, LogLevel, LogFilter, LogStats } from '../types/log';
 import LogItem from './LogItem';
@@ -10,7 +10,6 @@ interface LogPanelProps {
 
 export function LogPanel({ onReady }: LogPanelProps) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [filter, setFilter] = useState<LogFilter>({});
   const [searchText, setSearchText] = useState('');
   const [selectedLevels, setSelectedLevels] = useState<LogLevel[]>([
     LogLevel.Debug,
@@ -40,6 +39,7 @@ export function LogPanel({ onReady }: LogPanelProps) {
     if (onReady) {
       onReady();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Auto-refresh
@@ -51,11 +51,13 @@ export function LogPanel({ onReady }: LogPanelProps) {
     }, 2000); // Refresh every 2 seconds
 
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoRefresh, selectedLevels, searchText]);
 
   // Manual refresh on filter change
   useEffect(() => {
     loadLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLevels, searchText]);
 
   const handleToggleLevel = (level: LogLevel) => {
@@ -173,13 +175,22 @@ export function LogPanel({ onReady }: LogPanelProps) {
             Auto-refresh
           </label>
           <button onClick={loadLogs} className="btn btn-secondary">
-            🔄 Refresh
+            <span role="img" aria-label="Refresh">
+              🔄
+            </span>{' '}
+            Refresh
           </button>
           <button onClick={handleExportLogs} className="btn btn-secondary">
-            📥 Export
+            <span role="img" aria-label="Export">
+              📥
+            </span>{' '}
+            Export
           </button>
           <button onClick={handleClearLogs} className="btn btn-danger">
-            🗑️ Clear All
+            <span role="img" aria-label="Delete">
+              🗑️
+            </span>{' '}
+            Clear All
           </button>
         </div>
       </div>

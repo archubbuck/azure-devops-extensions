@@ -151,34 +151,34 @@ class LogService {
     // Filter by level
     if (filter.levels && filter.levels.length > 0) {
       filteredLogs = filteredLogs.filter((log) =>
-        filter.levels!.includes(log.level)
+        filter.levels?.includes(log.level)
       );
     }
 
     // Filter by source
     if (filter.sources && filter.sources.length > 0) {
       filteredLogs = filteredLogs.filter((log) =>
-        filter.sources!.includes(log.source)
+        filter.sources?.includes(log.source)
       );
     }
 
     // Filter by extension
     if (filter.extensionIds && filter.extensionIds.length > 0) {
       filteredLogs = filteredLogs.filter(
-        (log) => log.extensionId && filter.extensionIds!.includes(log.extensionId)
+        (log) => log.extensionId && filter.extensionIds?.includes(log.extensionId)
       );
     }
 
     // Filter by date range
     if (filter.startDate) {
       filteredLogs = filteredLogs.filter(
-        (log) => log.timestamp >= filter.startDate!
+        (log) => log.timestamp >= (filter.startDate as Date)
       );
     }
 
     if (filter.endDate) {
       filteredLogs = filteredLogs.filter(
-        (log) => log.timestamp <= filter.endDate!
+        (log) => log.timestamp <= (filter.endDate as Date)
       );
     }
 
