@@ -1,0 +1,301 @@
+name: CD - Publish Extension
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: read
+
+jobs:
+  publish-extension:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for accurate commit count
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build extensions
+        run: npm run build
+      
+      - name: Install TFX CLI
+        run: npm install -g tfx-cli
+      
+      - name: Verify build output
+        run: |
+          echo "Verifying build output for all extensions..."
+          
+          # Check notification-hub
+          if [ ! -d "apps/better-notification-hub/dist" ] || [ -z "$(ls -A apps/better-notification-hub/dist)" ]; then
+            echo "❌ Build verification failed: notification-hub dist folder is missing or empty."
+            exit 1
+          fi
+          echo "✅ notification-hub build output verified"
+          
+          # Check hello-azure
+          if [ ! -d "apps/better-hello-azure/dist" ] || [ -z "$(ls -A apps/better-hello-azure/dist)" ]; then
+            echo "❌ Build verification failed: hello-azure dist folder is missing or empty."
+            exit 1
+          fi
+          echo "✅ hello-azure build output verified"
+          
+          echo ""
+          echo "📦 Build artifacts:"
+          echo ""
+          echo "notification-hub:"
+          ls -lh apps/better-notification-hub/dist/
+          echo ""
+          echo "hello-azure:"
+          ls -lh apps/better-hello-azure/dist/
+      
+      - name: Update versions automatically
+        env:
+          PUBLISHER_ID: ${{ secrets.PUBLISHER_ID }}
+        run: |
+          echo "Automatically updating versions for all extensions based on git history..."
+          node scripts/update-version.mjs
+      
+      - name: Package and Publish Extensions to Azure DevOps
+        env:
+          AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+          PUBLISHER_ID: ${{ secrets.PUBLISHER_ID }}
+          ORGANIZATION_NAME: archubbuck
+        run: |
+          # Find all extension manifest files
+          MANIFEST_FILES=$(ls azure-devops-extension-*.json)
+          
+          if [ -z "$MANIFEST_FILES" ]; then
+            echo "❌ No extension manifest files found"
+            exit 1
+          fi
+          
+          echo "Found extension manifests:"
+          echo "$MANIFEST_FILES"
+          echo ""
+          
+          # Update publisher in all manifests if PUBLISHER_ID is provided
+          if [ -n "$PUBLISHER_ID" ]; then
+            echo "Updating publisher ID to $PUBLISHER_ID in all manifests..."
+            for MANIFEST in $MANIFEST_FILES; do
+              cat "$MANIFEST" | \
+                jq --arg publisher "$PUBLISHER_ID" '.publisher = $publisher' > "${MANIFEST}.tmp"
+              mv "${MANIFEST}.tmp" "$MANIFEST"
+              echo "  ✓ Updated $MANIFEST"
+            done
+            echo ""
+          fi
+          
+          # Function to check if extension needs publishing
+          needs_publish() {
+            local MANIFEST=$1
+            
+            # Check marketplace version vs local version
+            if node scripts/check-marketplace-version.mjs --manifest "$MANIFEST" --publisher "$PUBLISHER_ID"; then
+              return 0  # Needs publish
+            else
+              local EXIT_CODE=$?
+              if [ $EXIT_CODE -eq 1 ]; then
+                return 1  # Skip publish
+              else
+                # Error occurred, but continue with publish attempt to be safe
+                echo "  ⚠️  Could not determine marketplace version, will attempt publish"
+                return 0
+              fi
+            fi
+          }
+          
+          # Function to publish or package an extension with smart retry logic
+          publish_extension() {
+            local MANIFEST=$1
+            local EXTENSION_NAME=$(cat "$MANIFEST" | jq -r '.name')
+            local EXTENSION_VERSION=$(cat "$MANIFEST" | jq -r '.version')
+            local EXTENSION_ID=$(cat "$MANIFEST" | jq -r '.id')
+            
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "📦 Processing: $EXTENSION_NAME (v$EXTENSION_VERSION)"
+            echo "   Extension ID: $EXTENSION_ID"
+            echo "   Manifest: $MANIFEST"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            
+            # Check if we have PAT for publishing
+            if [ -z "$AZURE_DEVOPS_PAT" ]; then
+              echo "Creating package only (AZURE_DEVOPS_PAT not set)..."
+              tfx extension create --manifest-globs "$MANIFEST" --output-path ./output
+              echo "✅ $EXTENSION_NAME package created"
+              return 0
+            fi
+            
+            # Check if publish is needed
+            echo ""
+            echo "Checking marketplace version..."
+            if ! needs_publish "$MANIFEST"; then
+              echo "⏭️  Skipping publish: Extension is already up-to-date in marketplace"
+              # Still create the package for artifacts
+              tfx extension create --manifest-globs "$MANIFEST" --output-path ./output
+              return 2  # Return 2 to indicate "skipped" (different from success 0 and failure 1/255)
+            fi
+            
+            echo ""
+            echo "Publishing to marketplace and sharing with $ORGANIZATION_NAME..."
+            
+            # Publish with smart retry logic
+            # Only retry on transient errors (network, timeout), not on validation errors
+            MAX_RETRIES=3
+            ATTEMPT=1
+            
+            while [ $ATTEMPT -le $MAX_RETRIES ]; do
+              echo "📤 Publish attempt $ATTEMPT of $MAX_RETRIES..."
+              
+              # Capture both stdout and stderr
+              PUBLISH_OUTPUT=$(tfx extension publish \
+                --manifest-globs "$MANIFEST" \
+                --share-with $ORGANIZATION_NAME \
+                --token $AZURE_DEVOPS_PAT \
+                --output-path ./output \
+                --no-prompt 2>&1)
+              EXIT_CODE=$?
+              
+              if [ $EXIT_CODE -eq 0 ]; then
+                echo "✅ $EXTENSION_NAME published successfully!"
+                echo "$PUBLISH_OUTPUT" | grep -E "(created|updated|published)" || true
+                return 0
+              fi
+              
+              # Check for specific error patterns
+              if echo "$PUBLISH_OUTPUT" | grep -qi "version number must increase"; then
+                echo "❌ Version error: Local version ($EXTENSION_VERSION) is not greater than marketplace version"
+                echo "   This indicates a versioning script issue. Check update-version.mjs"
+                echo "$PUBLISH_OUTPUT"
+                return 255  # Don't retry version errors
+              elif echo "$PUBLISH_OUTPUT" | grep -qi "already exists in the marketplace"; then
+                echo "❌ Name conflict: Extension name/ID already exists in marketplace"
+                echo "   The extension ID '$EXTENSION_ID' is already taken by another publisher"
+                echo "   Consider using a different extension ID in the manifest"
+                echo "$PUBLISH_OUTPUT"
+                return 255  # Don't retry name conflicts
+              elif echo "$PUBLISH_OUTPUT" | grep -qiE "(timeout|network|connection|ECONNREFUSED|ENOTFOUND)"; then
+                # Transient error - retry
+                echo "⚠️  Network error on attempt $ATTEMPT"
+                if [ $ATTEMPT -lt $MAX_RETRIES ]; then
+                  DELAY=$((10 * $ATTEMPT))  # Linear backoff: 10s, 20s, 30s
+                  echo "⏳ Waiting $DELAY seconds before retry..."
+                  sleep $DELAY
+                  ATTEMPT=$((ATTEMPT + 1))
+                  continue
+                fi
+              else
+                # Unknown error
+                echo "⚠️  Publish attempt $ATTEMPT failed with exit code $EXIT_CODE"
+                echo "$PUBLISH_OUTPUT"
+                if [ $ATTEMPT -lt $MAX_RETRIES ]; then
+                  DELAY=$((10 * $ATTEMPT))
+                  echo "⏳ Waiting $DELAY seconds before retry..."
+                  sleep $DELAY
+                  ATTEMPT=$((ATTEMPT + 1))
+                  continue
+                fi
+              fi
+              
+              # If we get here, all retries exhausted
+              echo "❌ All $MAX_RETRIES publish attempts failed for $EXTENSION_NAME"
+              return $EXIT_CODE
+            done
+          }
+          
+          # Process each extension
+          FAILED_EXTENSIONS=""
+          SKIPPED_EXTENSIONS=""
+          SUCCESS_COUNT=0
+          
+          for MANIFEST in $MANIFEST_FILES; do
+            EXTENSION_NAME=$(cat "$MANIFEST" | jq -r '.name')
+            
+            publish_extension "$MANIFEST"
+            EXIT_CODE=$?
+            
+            if [ $EXIT_CODE -eq 0 ]; then
+              # Successfully published
+              SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+            elif [ $EXIT_CODE -eq 2 ]; then
+              # Skipped (already up-to-date) - return code 2 from publish_extension
+              SKIPPED_EXTENSIONS="${SKIPPED_EXTENSIONS}${EXTENSION_NAME}, "
+            else
+              # Failed - 255 for non-retryable errors, other non-zero for retriable failures
+              FAILED_EXTENSIONS="${FAILED_EXTENSIONS}${EXTENSION_NAME}, "
+            fi
+            echo ""
+          done
+          
+          # Summary
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📊 Deployment Summary"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ Successful: $SUCCESS_COUNT"
+          
+          if [ -n "$SKIPPED_EXTENSIONS" ]; then
+            echo "⏭️  Skipped (up-to-date): ${SKIPPED_EXTENSIONS%, }"
+          fi
+          
+          if [ -n "$FAILED_EXTENSIONS" ]; then
+            echo "❌ Failed: ${FAILED_EXTENSIONS%, }"
+            echo ""
+            echo "See logs above for detailed error information."
+            exit 1
+          else
+            echo "🎉 All extensions processed successfully!"
+          fi
+      
+      - name: Upload VSIX artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-packages
+          path: output/*.vsix
+          retention-days: 30
+      
+      - name: Create release info
+        if: always()
+        env:
+          AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+          ORGANIZATION_NAME: archubbuck
+        run: |
+          echo "# Extension Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Published Extensions" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # List all extension manifests and their details
+          MANIFEST_FILES=$(ls azure-devops-extension-*.json)
+          for MANIFEST in $MANIFEST_FILES; do
+            EXTENSION_NAME=$(cat "$MANIFEST" | jq -r '.name')
+            EXTENSION_ID=$(cat "$MANIFEST" | jq -r '.id')
+            EXTENSION_VERSION=$(cat "$MANIFEST" | jq -r '.version')
+            
+            echo "### $EXTENSION_NAME" >> $GITHUB_STEP_SUMMARY
+            echo "- **Extension ID**: $EXTENSION_ID" >> $GITHUB_STEP_SUMMARY
+            echo "- **Version**: $EXTENSION_VERSION" >> $GITHUB_STEP_SUMMARY
+            echo "- **Manifest**: \`$MANIFEST\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          done
+          
+          echo "## Deployment Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$AZURE_DEVOPS_PAT" ]; then
+            echo "✅ Extensions published to Azure DevOps Marketplace" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Install at**: https://dev.azure.com/$ORGANIZATION_NAME/_settings/extensions" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️  Extension packages created but not published (PAT not configured)" >> $GITHUB_STEP_SUMMARY
+          fi
