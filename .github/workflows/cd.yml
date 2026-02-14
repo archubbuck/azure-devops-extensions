@@ -11,6 +11,9 @@ permissions:
 jobs:
   publish-extension:
     runs-on: ubuntu-latest
+    env:
+      HAS_PUBLISHER_ID: ${{ secrets.PUBLISHER_ID != '' }}
+      HAS_AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT != '' }}
     
     steps:
       - name: Checkout code
@@ -73,7 +76,7 @@ jobs:
           fi
       
       - name: Update publisher in manifests
-        if: ${{ secrets.PUBLISHER_ID != '' }}
+        if: env.HAS_PUBLISHER_ID == 'true'
         env:
           PUBLISHER_ID: ${{ secrets.PUBLISHER_ID }}
         run: |
@@ -94,7 +97,7 @@ jobs:
           done
       
       - name: Publish extensions
-        if: ${{ secrets.AZURE_DEVOPS_PAT != '' }}
+        if: env.HAS_AZURE_DEVOPS_PAT == 'true'
         env:
           AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
           ORGANIZATION_NAME: archubbuck
