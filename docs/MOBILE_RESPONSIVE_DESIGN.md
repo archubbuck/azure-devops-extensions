@@ -171,12 +171,13 @@ When possible, test on:
 
 ## Accessibility Considerations
 
-1. **Touch Targets**: Minimum 44x44px for all interactive elements
+1. **Touch Targets**: Minimum 44x44px for all interactive elements (WCAG 2.1 AA Level 2.5.5)
 2. **Text Sizing**: 
-   - Body text: Minimum 12px on mobile
+   - Body text: Minimum 12px on mobile (assuming user zoom/scaling is available)
    - Secondary/meta text (badges, labels, timestamps): Minimum 11px on mobile
    - Never go below 11px for any text
-3. **Contrast**: Maintain WCAG AA contrast ratios at all breakpoints
+   - **Note**: WCAG 2.1 AA requires text to be resizable up to 200% without loss of functionality. These minimums assume browser zoom capabilities are available.
+3. **Contrast**: Maintain WCAG AA contrast ratios at all breakpoints (4.5:1 for normal text, 3:1 for large text)
 4. **Focus States**: Ensure visible focus indicators on all devices
 
 ## Common Anti-Patterns to Avoid
