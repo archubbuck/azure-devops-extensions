@@ -22,6 +22,7 @@ class LogService {
   private constructor() {
     this.loadLogsFromStorage();
     this.interceptConsoleLogs();
+    this.setupStorageListener();
   }
 
   public static getInstance(): LogService {
@@ -29,6 +30,27 @@ class LogService {
       LogService.instance = new LogService();
     }
     return LogService.instance;
+  }
+
+  /**
+   * Setup storage event listener to detect changes from other extensions
+   */
+  private setupStorageListener(): void {
+    window.addEventListener('storage', (event) => {
+      // Only react to changes to our storage key
+      if (event.key === this.STORAGE_KEY && event.newValue !== null) {
+        try {
+          const parsed = JSON.parse(event.newValue);
+          // Convert timestamp strings back to Date objects
+          this.logs = parsed.map((log: LogEntry) => ({
+            ...log,
+            timestamp: new Date(log.timestamp),
+          }));
+        } catch (error) {
+          this.originalConsole.error('Failed to sync logs from storage event:', error);
+        }
+      }
+    });
   }
 
   /**
@@ -285,11 +307,43 @@ class LogService {
   }
 
   /**
-   * Save logs to localStorage
+   * Save logs to localStorage with merge strategy to prevent race conditions
    */
   private saveLogsToStorage(): void {
     try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.logs));
+      // Read current storage to merge with our logs
+      const stored = localStorage.getItem(this.STORAGE_KEY);
+      let existingLogs: LogEntry[] = [];
+      
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        existingLogs = parsed.map((log: LogEntry) => ({
+          ...log,
+          timestamp: new Date(log.timestamp),
+        }));
+      }
+      
+      // Create a map of existing logs by ID for efficient lookup
+      const existingLogMap = new Map<string, LogEntry>();
+      existingLogs.forEach(log => existingLogMap.set(log.id, log));
+      
+      // Merge: add our logs that aren't already in storage
+      const mergedLogs: LogEntry[] = [...existingLogs];
+      this.logs.forEach(log => {
+        if (!existingLogMap.has(log.id)) {
+          mergedLogs.unshift(log); // Add new logs to the beginning
+        }
+      });
+      
+      // Sort by timestamp (newest first) and limit size
+      mergedLogs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      const finalLogs = mergedLogs.slice(0, this.MAX_LOGS);
+      
+      // Update our in-memory logs to match what we're saving
+      this.logs = finalLogs;
+      
+      // Save to storage
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(finalLogs));
     } catch (error) {
       // Use original console to avoid infinite loop
       this.originalConsole.error('Failed to save logs to storage:', error);
