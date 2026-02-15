@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "better-hello-azure",
   "publisher": "notification-hub-publisher",
-  "version": "10.0.59",
+  "version": "10.0.64",
   "name": "Better Hello Azure",
   "description": "A basic Azure DevOps extension for testing automated deployment",
   "public": false,
@@ -39,7 +39,7 @@
     }
   ],
   "metadata": {
-    "lastVersionCommit": "5b7891ad9185387d1697ec1494fa603546cbee6d",
-    "lastVersionUpdate": "2026-02-15T04:46:07.863Z"
+    "lastVersionCommit": "d8ec0c9a7ace80e3e4dece0d141aa38f3ad87886",
+    "lastVersionUpdate": "2026-02-15T05:38:51.584Z"
   }
 }
