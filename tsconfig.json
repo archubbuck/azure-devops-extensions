@@ -8,6 +8,9 @@
     },
     {
       "path": "./apps/better-notification-hub"
+    },
+    {
+      "path": "./apps/better-logs"
     }
   ]
 }

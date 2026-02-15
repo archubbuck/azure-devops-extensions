@@ -3,15 +3,17 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "build": "npm run build:notification-hub && npm run build:hello-azure && npm run build:tag-manager && npm run build:excel-grid",
+    "build": "npm run build:notification-hub && npm run build:hello-azure && npm run build:tag-manager && npm run build:excel-grid && npm run build:better-logs",
     "build:notification-hub": "npx nx build @notification-hub/notification-hub",
     "build:hello-azure": "npx nx build @hello-azure/hello-azure",
     "build:tag-manager": "npx nx build @better-tag-manager/better-tag-manager",
     "build:excel-grid": "npx nx build @excel-grid/excel-grid",
+    "build:better-logs": "npx nx build @better-logs/better-logs",
     "dev": "npx nx serve @notification-hub/notification-hub",
     "dev:hello-azure": "npx nx serve @hello-azure/hello-azure",
     "dev:tag-manager": "npx nx serve @better-tag-manager/better-tag-manager",
     "dev:excel-grid": "npx nx serve @excel-grid/excel-grid",
+    "dev:better-logs": "npx nx serve @better-logs/better-logs",
     "test": "npx nx run-many --target=test --all",
     "lint": "npx nx run-many --target=lint --all",
     "update-version": "node scripts/update-version.mjs"
