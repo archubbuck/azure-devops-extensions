@@ -48,13 +48,12 @@ class LogService {
           }));
           
           // Merge incoming logs with current logs using deduplication
-          const currentLogMap = new Map<string, LogEntry>();
-          this.logs.forEach(log => currentLogMap.set(log.id, log));
+          const incomingIds = new Set(incomingLogs.map(l => l.id));
           
           const mergedLogs = [...incomingLogs];
           this.logs.forEach(log => {
             // Add logs from current instance that aren't in incoming logs
-            if (!incomingLogs.find(incoming => incoming.id === log.id)) {
+            if (!incomingIds.has(log.id)) {
               mergedLogs.push(log);
             }
           });
