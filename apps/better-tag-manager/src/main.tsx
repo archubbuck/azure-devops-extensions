@@ -2,6 +2,10 @@ import { StrictMode } from 'react';
 import * as ReactDOM from 'react-dom/client';
 import * as SDK from 'azure-devops-extension-sdk';
 import App from './app/app';
+import LogService from './services/log.service';
+
+// Initialize LogService early to capture startup logs
+LogService.getInstance();
 
 // Enhanced logging helper with timestamps
 const log = (message: string, data?: unknown) => {
@@ -24,6 +28,7 @@ const initStartTime = Date.now();
 SDK.init({
   applyTheme: true,
 })
+  .then(() => SDK.ready())
   .then(() => {
     const initDuration = Date.now() - initStartTime;
     log(`SDK initialized successfully in ${initDuration}ms`);
