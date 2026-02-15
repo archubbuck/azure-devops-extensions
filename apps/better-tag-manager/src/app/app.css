@@ -321,4 +321,176 @@
 .search-input:disabled {
   background: #f3f2f1;
   cursor: not-allowed;
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 16px;
+  }
+
+  .header h1 {
+    font-size: 24px;
+  }
+
+  .header p {
+    font-size: 13px;
+  }
+
+  .stats {
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 12px;
+  }
+
+  .stat-value {
+    font-size: 20px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+  }
+
+  .search-input {
+    max-width: 100%;
+  }
+
+  .actions {
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    min-height: 44px;
+  }
+
+  .tags-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  .tag-card {
+    padding: 12px;
+  }
+
+  .tag-name {
+    font-size: 14px;
+  }
+
+  .tag-details {
+    font-size: 11px;
+  }
+
+  .modal {
+    width: 95%;
+    padding: 20px;
+  }
+
+  .modal h2 {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-container {
+    padding: 12px;
+  }
+
+  .header h1 {
+    font-size: 20px;
+  }
+
+  .header p {
+    font-size: 12px;
+  }
+
+  .stats {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .stat-card {
+    padding: 10px;
+  }
+
+  .stat-value {
+    font-size: 18px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .tags-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .tag-card {
+    padding: 10px;
+  }
+
+  .tag-name {
+    font-size: 13px;
+  }
+
+  .tag-details {
+    font-size: 11px;
+  }
+
+  .modal {
+    width: 98%;
+    padding: 16px;
+  }
+
+  .modal h2 {
+    font-size: 16px;
+    margin-bottom: 16px;
+  }
+
+  .form-group {
+    margin-bottom: 12px;
+  }
+
+  .form-group label {
+    font-size: 13px;
+  }
+
+  .form-group input {
+    font-size: 13px;
+    padding: 7px 10px;
+    min-height: 44px;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .modal-actions .btn {
+    width: 100%;
+  }
+
+  .empty-state {
+    padding: 40px 12px;
+  }
+
+  .empty-state h2 {
+    font-size: 18px;
+  }
+
+  .empty-state p {
+    font-size: 13px;
+  }
 }

@@ -169,4 +169,96 @@
 .filter-tab:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .panel-header {
+    padding: 12px 14px;
+  }
+
+  .panel-header h2 {
+    font-size: 16px;
+  }
+
+  .panel-actions {
+    padding: 10px 14px;
+    gap: 6px;
+  }
+
+  .refresh-button,
+  .mark-all-read-button {
+    padding: 8px 10px;
+    font-size: 12px;
+    min-height: 44px;
+  }
+
+  .filter-tabs {
+    padding: 6px 14px;
+  }
+
+  .filter-tab {
+    padding: 8px 10px;
+    font-size: 12px;
+    min-height: 44px;
+  }
+
+  .empty-state {
+    padding: 40px 16px;
+  }
+
+  .loading-state {
+    padding: 30px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .panel-header {
+    padding: 10px 12px;
+  }
+
+  .panel-header h2 {
+    font-size: 15px;
+  }
+
+  .panel-actions {
+    padding: 8px 12px;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .refresh-button,
+  .mark-all-read-button {
+    width: 100%;
+    padding: 10px;
+    min-height: 44px;
+  }
+
+  .filter-tabs {
+    padding: 6px 12px;
+    gap: 4px;
+  }
+
+  .filter-tab {
+    padding: 8px;
+    font-size: 11px;
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .empty-state {
+    padding: 30px 12px;
+  }
+
+  .empty-state p {
+    font-size: 13px;
+  }
+
+  .loading-state {
+    padding: 20px 12px;
+  }
+
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border-width: 3px;
+  }
 }

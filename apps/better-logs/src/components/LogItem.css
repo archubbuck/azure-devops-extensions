@@ -108,3 +108,58 @@
     --link-color: #4da6ff;
   }
 }
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .log-item {
+    padding: 10px;
+    margin-bottom: 6px;
+  }
+
+  .log-item-header {
+    font-size: 11px;
+    gap: 6px;
+  }
+
+  .log-level-icon {
+    font-size: 14px;
+  }
+
+  .log-source,
+  .log-extension {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+
+  .log-message {
+    font-size: 13px;
+  }
+
+  .log-data pre,
+  .log-stacktrace pre {
+    font-size: 12px;
+    padding: 6px;
+    max-height: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .log-item {
+    padding: 8px;
+  }
+
+  .log-item-header {
+    font-size: 11px;
+  }
+
+  .log-message {
+    font-size: 12px;
+  }
+
+  .log-data pre,
+  .log-stacktrace pre {
+    font-size: 12px;
+    padding: 4px;
+    max-height: 150px;
+  }
+}
