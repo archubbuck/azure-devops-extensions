@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "better-excel-grid",
   "publisher": "notification-hub-publisher",
-  "version": "10.0.53",
+  "version": "10.0.57",
   "name": "Excel-Native Web Grid",
   "description": "A high-performance web-based grid for bulk editing work items with offline sync capabilities",
   "public": false,
@@ -42,7 +42,7 @@
     }
   ],
   "metadata": {
-    "lastVersionCommit": "61e4b6c37f1a838b1663f06acdab0836e726be17",
-    "lastVersionUpdate": "2026-02-15T04:15:21.002Z"
+    "lastVersionCommit": "5b7891ad9185387d1697ec1494fa603546cbee6d",
+    "lastVersionUpdate": "2026-02-15T04:46:07.857Z"
   }
 }
