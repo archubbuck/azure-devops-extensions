@@ -126,3 +126,47 @@
   font-size: 14px;
   margin: 0;
 }
+
+/* Skeleton loading states */
+.skeleton-notification {
+  padding: 16px;
+  border-bottom: 1px solid #e1e1e1;
+  background: white;
+}
+
+.skeleton-notification::before {
+  content: '';
+  display: block;
+  width: 70%;
+  height: 16px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.skeleton-notification::after {
+  content: '';
+  display: block;
+  width: 90%;
+  height: 14px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.filter-tab:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

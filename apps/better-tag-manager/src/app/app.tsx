@@ -54,6 +54,12 @@ export function App({ onReady }: AppProps) {
       
       const projectInfo: ProjectInfo = { id: project.id, name: project.name };
       setProjectName(projectInfo.name);
+      
+      // Notify ready immediately after we have project info - UI is visible now
+      if (!hasNotifiedReady.current && onReady) {
+        hasNotifiedReady.current = true;
+        onReady();
+      }
 
       // Get all tags from the project
       const workItemTags = await client.getTags(projectInfo.id);
@@ -68,12 +74,6 @@ export function App({ onReady }: AppProps) {
       setTags(tagList);
       setFilteredTags(tagList);
       setLoading(false);
-      
-      // Notify that the app is ready after initial load
-      if (!hasNotifiedReady.current && onReady) {
-        hasNotifiedReady.current = true;
-        onReady();
-      }
     } catch (err) {
       console.error('Failed to fetch tags:', err);
       setError(err instanceof Error ? err.message : 'Failed to load tags');
@@ -217,7 +217,64 @@ export function App({ onReady }: AppProps) {
   if (loading) {
     return (
       <div className="app-container">
-        <div className="loading">Loading tags...</div>
+        <div className="header">
+          <h1>Work Item Tag Manager</h1>
+          <p>Manage tags for work items in {projectName || 'your project'}</p>
+        </div>
+
+        {error && (
+          <div className="error">
+            <strong>Error:</strong> {error}
+          </div>
+        )}
+
+        <div className="stats">
+          <div className="stat-card">
+            <div className="stat-value skeleton-text">...</div>
+            <div className="stat-label">Total Tags</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value skeleton-text">...</div>
+            <div className="stat-label">Active Tags</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value">0</div>
+            <div className="stat-label">Selected</div>
+          </div>
+        </div>
+
+        <div className="search-container">
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Search tags..."
+            disabled={true}
+          />
+        </div>
+
+        <div className="actions">
+          <button className="btn btn-primary" disabled={true}>
+            Create Tag
+          </button>
+          <button className="btn" disabled={true}>
+            Rename
+          </button>
+          <button className="btn btn-danger" disabled={true}>
+            Delete (0)
+          </button>
+          <button className="btn" disabled={true}>
+            Refresh
+          </button>
+        </div>
+
+        <div className="tags-grid">
+          <div className="skeleton-tag-card"></div>
+          <div className="skeleton-tag-card"></div>
+          <div className="skeleton-tag-card"></div>
+          <div className="skeleton-tag-card"></div>
+          <div className="skeleton-tag-card"></div>
+          <div className="skeleton-tag-card"></div>
+        </div>
       </div>
     );
   }

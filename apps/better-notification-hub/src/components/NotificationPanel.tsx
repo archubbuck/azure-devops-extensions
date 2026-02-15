@@ -106,7 +106,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
           <button 
             className="mark-all-read-button" 
             onClick={handleMarkAllAsRead}
-            disabled={notifications.every(n => n.read)}
+            disabled={loading || notifications.every(n => n.read)}
           >
             ✓ Mark all as read
           </button>
@@ -116,41 +116,49 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
           <button 
             className={`filter-tab ${filter === 'all' ? 'active' : ''}`}
             onClick={() => setFilter('all')}
+            disabled={loading && notifications.length === 0}
           >
-            All ({notifications.length})
+            All ({loading && notifications.length === 0 ? '...' : notifications.length})
           </button>
           <button 
             className={`filter-tab ${filter === 'unread' ? 'active' : ''}`}
             onClick={() => setFilter('unread')}
+            disabled={loading && notifications.length === 0}
           >
-            Unread ({notifications.filter(n => !n.read).length})
+            Unread ({loading && notifications.length === 0 ? '...' : notifications.filter(n => !n.read).length})
           </button>
           <button 
             className={`filter-tab ${filter === NotificationType.Mention ? 'active' : ''}`}
             onClick={() => setFilter(NotificationType.Mention)}
+            disabled={loading && notifications.length === 0}
           >
             Mentions
           </button>
           <button 
             className={`filter-tab ${filter === NotificationType.PullRequestComment ? 'active' : ''}`}
             onClick={() => setFilter(NotificationType.PullRequestComment)}
+            disabled={loading && notifications.length === 0}
           >
             PRs
           </button>
           <button 
             className={`filter-tab ${filter === NotificationType.WorkItemUpdate ? 'active' : ''}`}
             onClick={() => setFilter(NotificationType.WorkItemUpdate)}
+            disabled={loading && notifications.length === 0}
           >
             Work Items
           </button>
         </div>
 
         <div className="notification-list">
-          {loading && (
-            <div className="loading-state">
-              <div className="spinner"></div>
-              <p>Loading notifications...</p>
-            </div>
+          {loading && notifications.length === 0 && (
+            <>
+              <div className="skeleton-notification"></div>
+              <div className="skeleton-notification"></div>
+              <div className="skeleton-notification"></div>
+              <div className="skeleton-notification"></div>
+              <div className="skeleton-notification"></div>
+            </>
           )}
           
           {!loading && filteredNotifications.length === 0 && (
@@ -160,7 +168,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
             </div>
           )}
 
-          {!loading && filteredNotifications.map(notification => (
+          {(loading && notifications.length > 0 ? notifications : filteredNotifications).map(notification => (
             <NotificationItem
               key={notification.id}
               notification={notification}
