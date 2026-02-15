@@ -191,3 +191,107 @@
     --button-danger-hover: #a12227;
   }
 }
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .log-panel-header {
+    padding: 12px 16px;
+  }
+
+  .log-panel-header h2 {
+    font-size: 20px;
+  }
+
+  .log-stats {
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 13px;
+  }
+
+  .log-panel-controls {
+    padding: 12px 16px;
+  }
+
+  .level-filters {
+    gap: 12px;
+  }
+
+  .level-filter {
+    font-size: 12px;
+  }
+
+  .action-buttons {
+    gap: 6px;
+  }
+
+  .btn {
+    padding: 8px 10px;
+    font-size: 12px;
+    min-height: 44px;
+  }
+
+  .log-list {
+    padding: 12px 16px;
+  }
+
+  .empty-state {
+    padding: 40px 16px;
+  }
+
+  .empty-state p {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .log-panel-header {
+    padding: 8px 12px;
+  }
+
+  .log-panel-header h2 {
+    font-size: 18px;
+  }
+
+  .log-stats {
+    font-size: 12px;
+    gap: 8px;
+  }
+
+  .log-panel-controls {
+    padding: 8px 12px;
+    gap: 10px;
+  }
+
+  .level-filters {
+    gap: 8px;
+  }
+
+  .level-filter {
+    font-size: 11px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .auto-refresh-toggle {
+    margin-right: 0;
+    margin-bottom: 8px;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .log-list {
+    padding: 8px 12px;
+  }
+
+  .empty-state {
+    padding: 30px 12px;
+  }
+}

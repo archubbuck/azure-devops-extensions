@@ -61,3 +61,80 @@ h1 {
   color: #888;
   font-size: 0.9em;
 }
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 16px;
+  }
+
+  .content {
+    padding: 30px;
+  }
+
+  h1 {
+    font-size: 2em;
+  }
+
+  .subtitle {
+    font-size: 1.1em;
+  }
+
+  .info-card {
+    padding: 16px;
+  }
+
+  .info-card h2 {
+    font-size: 1.3em;
+  }
+
+  .info-card p {
+    font-size: 0.95em;
+  }
+
+  .footer {
+    margin-top: 20px;
+    font-size: 0.85em;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-container {
+    padding: 12px;
+    align-items: flex-start;
+  }
+
+  .content {
+    padding: 20px;
+  }
+
+  h1 {
+    font-size: 1.6em;
+  }
+
+  .subtitle {
+    font-size: 1em;
+    margin-bottom: 20px;
+  }
+
+  .info-card {
+    padding: 12px;
+    margin: 16px 0;
+  }
+
+  .info-card h2 {
+    font-size: 1.2em;
+    margin-bottom: 12px;
+  }
+
+  .info-card p {
+    font-size: 0.9em;
+    margin: 8px 0;
+  }
+
+  .footer {
+    margin-top: 16px;
+    padding-top: 16px;
+    font-size: 0.8em;
+  }
+}
