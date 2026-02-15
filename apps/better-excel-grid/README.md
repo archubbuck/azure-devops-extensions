@@ -97,7 +97,7 @@ npm run dev:excel-grid
 
 ### Linting
 ```bash
-npx nx lint @excel-grid/excel-grid
+npx nx lint @better-excel-grid/better-excel-grid
 ```
 
 ## Performance Characteristics
