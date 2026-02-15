@@ -9,8 +9,11 @@ class LogService {
   private static instance: LogService;
   private logs: LogEntry[] = [];
   private readonly STORAGE_KEY = 'better-logs-entries';
+  private readonly CHANNEL_NAME = 'better-logs-sync';
   private readonly MAX_LOGS = 10000; // Keep last 10k logs
   private isLogging = false; // Re-entrancy guard
+  private isSyncing = false; // Guard against sync cascades
+  private broadcastChannel: BroadcastChannel | null = null;
   private originalConsole = {
     log: console.log,
     info: console.info,
@@ -22,6 +25,7 @@ class LogService {
   private constructor() {
     this.loadLogsFromStorage();
     this.interceptConsoleLogs();
+    this.setupBroadcastChannel();
   }
 
   public static getInstance(): LogService {
@@ -29,6 +33,35 @@ class LogService {
       LogService.instance = new LogService();
     }
     return LogService.instance;
+  }
+
+  /**
+   * Setup BroadcastChannel for cross-extension synchronization
+   * BroadcastChannel works between iframes in the same window, unlike storage events
+   */
+  private setupBroadcastChannel(): void {
+    try {
+      // Create broadcast channel for cross-extension communication
+      this.broadcastChannel = new BroadcastChannel(this.CHANNEL_NAME);
+      
+      this.broadcastChannel.onmessage = (event) => {
+        // Ignore our own messages
+        if (this.isSyncing) return;
+        
+        try {
+          const message = event.data;
+          if (message.type === 'logs-updated') {
+            // Reload logs from storage when another extension updates them
+            this.loadLogsFromStorage();
+          }
+        } catch (error) {
+          this.originalConsole.error('Failed to handle broadcast message:', error);
+        }
+      };
+    } catch (error) {
+      // BroadcastChannel not supported in this environment
+      this.originalConsole.warn('BroadcastChannel not available, cross-extension sync disabled:', error);
+    }
   }
 
   /**
@@ -285,14 +318,60 @@ class LogService {
   }
 
   /**
-   * Save logs to localStorage
+   * Save logs to localStorage with merge strategy to prevent race conditions
    */
   private saveLogsToStorage(): void {
     try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.logs));
+      // Set syncing flag to prevent broadcast loops
+      this.isSyncing = true;
+      
+      // Read current storage to merge with our logs
+      const stored = localStorage.getItem(this.STORAGE_KEY);
+      let existingLogs: LogEntry[] = [];
+      
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        existingLogs = parsed.map((log: LogEntry) => ({
+          ...log,
+          timestamp: new Date(log.timestamp),
+        }));
+      }
+      
+      // Create a map of existing logs by ID for efficient lookup
+      const existingLogMap = new Map<string, LogEntry>();
+      existingLogs.forEach(log => existingLogMap.set(log.id, log));
+      
+      // Merge: add our logs that aren't already in storage
+      const mergedLogs: LogEntry[] = [...existingLogs];
+      this.logs.forEach(log => {
+        if (!existingLogMap.has(log.id)) {
+          mergedLogs.push(log); // Add new logs (will be sorted below)
+        }
+      });
+      
+      // Sort by timestamp (newest first) and limit size
+      mergedLogs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      const finalLogs = mergedLogs.slice(0, this.MAX_LOGS);
+      
+      // Update our in-memory logs to match what we're saving
+      this.logs = finalLogs;
+      
+      // Save to storage
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(finalLogs));
+      
+      // Notify other extensions via BroadcastChannel
+      if (this.broadcastChannel) {
+        try {
+          this.broadcastChannel.postMessage({ type: 'logs-updated' });
+        } catch (error) {
+          this.originalConsole.error('Failed to broadcast update:', error);
+        }
+      }
     } catch (error) {
       // Use original console to avoid infinite loop
       this.originalConsole.error('Failed to save logs to storage:', error);
+    } finally {
+      this.isSyncing = false;
     }
   }
 
