@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "better-tag-manager",
   "publisher": "notification-hub-publisher",
-  "version": "10.0.33",
+  "version": "10.0.42",
   "name": "Better Tag Manager",
   "description": "A modern user interface for managing work item tags in Azure DevOps",
   "public": false,
@@ -15,7 +15,7 @@
     }
   ],
   "icons": {
-    "default": "apps/tag-manager/dist/favicon.ico"
+    "default": "apps/better-tag-manager/dist/favicon.ico"
   },
   "contributions": [
     {
@@ -27,7 +27,7 @@
       ],
       "properties": {
         "name": "Tag Manager",
-        "uri": "apps/tag-manager/dist/index.html"
+        "uri": "apps/better-tag-manager/dist/index.html"
       }
     }
   ],
@@ -36,12 +36,12 @@
   ],
   "files": [
     {
-      "path": "apps/tag-manager/dist",
+      "path": "apps/better-tag-manager/dist",
       "addressable": true
     }
   ],
   "metadata": {
-    "lastVersionCommit": "42c8585d34277b98b496fc5ce05e14ca026467a8",
-    "lastVersionUpdate": "2026-02-14T05:51:28.756Z"
+    "lastVersionCommit": "2783b26874beb8806239476f3e75e17316d0095d",
+    "lastVersionUpdate": "2026-02-14T22:19:35.942Z"
   }
 }

@@ -9,7 +9,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export default defineConfig(() => ({
   root: __dirname,
   base: './',
-  cacheDir: '../../node_modules/.vite/apps/tag-manager',
+  cacheDir: '../../node_modules/.vite/apps/better-tag-manager',
   server: {
     port: 4202,
     host: 'localhost',
