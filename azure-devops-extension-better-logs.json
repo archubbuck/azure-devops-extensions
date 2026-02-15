@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "better-logs",
   "publisher": "notification-hub-publisher",
-  "version": "10.0.0",
+  "version": "10.0.47",
   "name": "Better Logs",
   "description": "Centralized log management hub for Azure DevOps extensions. Captures and displays logs from this extension in a unified interface and serves as a template for adding centralized logging to other extensions.",
   "public": false,
@@ -41,7 +41,7 @@
     }
   ],
   "metadata": {
-    "lastVersionCommit": "",
-    "lastVersionUpdate": ""
+    "lastVersionCommit": "09cd9283f589fef73ec50f797f731ab427c895ee",
+    "lastVersionUpdate": "2026-02-15T04:00:41.590Z"
   }
 }
