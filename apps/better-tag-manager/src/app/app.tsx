@@ -230,6 +230,7 @@ export function App({ onReady }: AppProps) {
 
         <div className="stats">
           <div className="stat-card">
+            {/* Using skeleton-text class which makes text transparent via CSS */}
             <div className="stat-value skeleton-text">...</div>
             <div className="stat-label">Total Tags</div>
           </div>
