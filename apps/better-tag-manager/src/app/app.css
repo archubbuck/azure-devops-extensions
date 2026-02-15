@@ -307,6 +307,10 @@
     flex-wrap: wrap;
   }
 
+  .btn {
+    min-height: 44px;
+  }
+
   .tags-grid {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 12px;
@@ -372,6 +376,7 @@
   .btn {
     width: 100%;
     justify-content: center;
+    min-height: 44px;
   }
 
   .tags-grid {
@@ -412,6 +417,7 @@
   .form-group input {
     font-size: 13px;
     padding: 7px 10px;
+    min-height: 44px;
   }
 
   .modal-actions {
