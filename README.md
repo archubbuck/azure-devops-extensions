@@ -194,7 +194,7 @@ Each extension has its own manifest file:
 - `azure-devops-extension-notification-hub.json` - Notification Hub extension
 - `azure-devops-extension-hello-azure.json` - Hello Azure DevOps extension
 - `azure-devops-extension-tag-manager.json` - Tag Manager extension
-- `azure-devops-extension-excel-grid.json` - Excel-Native Web Grid extension
+- `azure-devops-extension-better-excel-grid.json` - Excel-Native Web Grid extension
 
 These files define:
 - Extension metadata (name, description, version)
