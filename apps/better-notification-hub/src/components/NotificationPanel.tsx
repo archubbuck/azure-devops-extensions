@@ -168,8 +168,8 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
             </div>
           )}
 
-          {/* Show existing notifications while refreshing, or filtered notifications when not loading */}
-          {(loading && notifications.length > 0 ? notifications : filteredNotifications).map(notification => (
+          {/* Always render filtered notifications so the active filter is respected, even while loading */}
+          {filteredNotifications.map(notification => (
             <NotificationItem
               key={notification.id}
               notification={notification}

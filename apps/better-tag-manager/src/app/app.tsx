@@ -231,11 +231,11 @@ export function App({ onReady }: AppProps) {
         <div className="stats">
           <div className="stat-card">
             {/* Using skeleton-text class which makes text transparent via CSS */}
-            <div className="stat-value skeleton-text">...</div>
+            <div className="stat-value skeleton-text" aria-hidden="true">...</div>
             <div className="stat-label">Total Tags</div>
           </div>
           <div className="stat-card">
-            <div className="stat-value skeleton-text">...</div>
+            <div className="stat-value skeleton-text" aria-hidden="true">...</div>
             <div className="stat-label">Active Tags</div>
           </div>
           <div className="stat-card">
