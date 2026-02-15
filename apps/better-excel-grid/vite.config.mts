@@ -9,13 +9,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export default defineConfig(() => ({
   root: __dirname,
   base: './',
-  cacheDir: '../../node_modules/.vite/apps/tag-manager',
+  cacheDir: '../../node_modules/.vite/apps/better-excel-grid',
   server: {
-    port: 4202,
+    port: 4203,
     host: 'localhost',
   },
   preview: {
-    port: 4302,
+    port: 4303,
     host: 'localhost',
   },
   plugins: [react()],
