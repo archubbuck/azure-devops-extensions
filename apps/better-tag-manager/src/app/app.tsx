@@ -85,7 +85,8 @@ export function App({ onReady }: AppProps) {
         onReady();
       }
     }
-  }, [onReady]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // onReady is intentionally omitted - it's only called once via hasNotifiedReady guard
 
   useEffect(() => {
     fetchTags();
