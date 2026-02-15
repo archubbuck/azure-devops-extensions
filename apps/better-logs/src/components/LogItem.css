@@ -149,7 +149,7 @@
   }
 
   .log-item-header {
-    font-size: 10px;
+    font-size: 11px;
   }
 
   .log-message {
@@ -158,7 +158,7 @@
 
   .log-data pre,
   .log-stacktrace pre {
-    font-size: 10px;
+    font-size: 11px;
     padding: 4px;
     max-height: 150px;
   }

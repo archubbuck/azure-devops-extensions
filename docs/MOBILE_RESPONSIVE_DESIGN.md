@@ -172,7 +172,7 @@ When possible, test on:
 ## Accessibility Considerations
 
 1. **Touch Targets**: Minimum 44x44px for all interactive elements
-2. **Text Sizing**: Never reduce text below 11px on mobile
+2. **Text Sizing**: Never reduce text below 12px on mobile (WCAG recommendation)
 3. **Contrast**: Maintain WCAG AA contrast ratios at all breakpoints
 4. **Focus States**: Ensure visible focus indicators on all devices
 
