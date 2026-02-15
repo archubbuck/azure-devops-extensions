@@ -224,7 +224,7 @@ Reference implementations can be found in:
 
 - [MDN: Responsive Design](https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Responsive_Design)
 - [WCAG Touch Target Guidelines](https://www.w3.org/WAI/WCAG21/Understanding/target-size.html)
-- [Azure DevOps Extension Guidelines](https://docs.microsoft.com/en-us/azure/devops/extend/)
+- [Azure DevOps Extension Guidelines](https://learn.microsoft.com/en-us/azure/devops/extend/)
 
 ## Maintenance
 
