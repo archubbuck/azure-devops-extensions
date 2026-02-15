@@ -9,8 +9,11 @@ class LogService {
   private static instance: LogService;
   private logs: LogEntry[] = [];
   private readonly STORAGE_KEY = 'better-logs-entries';
+  private readonly CHANNEL_NAME = 'better-logs-sync';
   private readonly MAX_LOGS = 10000; // Keep last 10k logs
   private isLogging = false; // Re-entrancy guard
+  private isSyncing = false; // Guard against sync cascades
+  private broadcastChannel: BroadcastChannel | null = null;
   private originalConsole = {
     log: console.log,
     info: console.info,
@@ -22,7 +25,7 @@ class LogService {
   private constructor() {
     this.loadLogsFromStorage();
     this.interceptConsoleLogs();
-    this.setupStorageListener();
+    this.setupBroadcastChannel();
   }
 
   public static getInstance(): LogService {
@@ -33,39 +36,32 @@ class LogService {
   }
 
   /**
-   * Setup storage event listener to detect changes from other extensions
+   * Setup BroadcastChannel for cross-extension synchronization
+   * BroadcastChannel works between iframes in the same window, unlike storage events
    */
-  private setupStorageListener(): void {
-    window.addEventListener('storage', (event) => {
-      // Only react to changes to our storage key
-      if (event.key === this.STORAGE_KEY && event.newValue !== null) {
+  private setupBroadcastChannel(): void {
+    try {
+      // Create broadcast channel for cross-extension communication
+      this.broadcastChannel = new BroadcastChannel(this.CHANNEL_NAME);
+      
+      this.broadcastChannel.onmessage = (event) => {
+        // Ignore our own messages
+        if (this.isSyncing) return;
+        
         try {
-          const parsed = JSON.parse(event.newValue);
-          // Convert timestamp strings back to Date objects
-          const incomingLogs: LogEntry[] = parsed.map((log: LogEntry) => ({
-            ...log,
-            timestamp: new Date(log.timestamp),
-          }));
-          
-          // Merge incoming logs with current logs using deduplication
-          const incomingIds = new Set(incomingLogs.map(l => l.id));
-          
-          const mergedLogs = [...incomingLogs];
-          this.logs.forEach(log => {
-            // Add logs from current instance that aren't in incoming logs
-            if (!incomingIds.has(log.id)) {
-              mergedLogs.push(log);
-            }
-          });
-          
-          // Sort by timestamp (newest first) and update
-          mergedLogs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-          this.logs = mergedLogs.slice(0, this.MAX_LOGS);
+          const message = event.data;
+          if (message.type === 'logs-updated') {
+            // Reload logs from storage when another extension updates them
+            this.loadLogsFromStorage();
+          }
         } catch (error) {
-          this.originalConsole.error('Failed to sync logs from storage event:', error);
+          this.originalConsole.error('Failed to handle broadcast message:', error);
         }
-      }
-    });
+      };
+    } catch (error) {
+      // BroadcastChannel not supported in this environment
+      this.originalConsole.warn('BroadcastChannel not available, cross-extension sync disabled:', error);
+    }
   }
 
   /**
@@ -326,6 +322,9 @@ class LogService {
    */
   private saveLogsToStorage(): void {
     try {
+      // Set syncing flag to prevent broadcast loops
+      this.isSyncing = true;
+      
       // Read current storage to merge with our logs
       const stored = localStorage.getItem(this.STORAGE_KEY);
       let existingLogs: LogEntry[] = [];
@@ -359,9 +358,20 @@ class LogService {
       
       // Save to storage
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(finalLogs));
+      
+      // Notify other extensions via BroadcastChannel
+      if (this.broadcastChannel) {
+        try {
+          this.broadcastChannel.postMessage({ type: 'logs-updated' });
+        } catch (error) {
+          this.originalConsole.error('Failed to broadcast update:', error);
+        }
+      }
     } catch (error) {
       // Use original console to avoid infinite loop
       this.originalConsole.error('Failed to save logs to storage:', error);
+    } finally {
+      this.isSyncing = false;
     }
   }
 
