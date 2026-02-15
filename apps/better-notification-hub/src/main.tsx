@@ -26,6 +26,7 @@ const initStartTime = Date.now();
 SDK.init({
   applyTheme: true,
 })
+  .then(() => SDK.ready())
   .then(() => {
     const initDuration = Date.now() - initStartTime;
     log(`SDK initialized successfully in ${initDuration}ms`);
