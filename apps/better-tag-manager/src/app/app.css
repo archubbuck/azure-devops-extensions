@@ -269,6 +269,60 @@
   letter-spacing: 0.5px;
 }
 
+/* Skeleton loading states */
+.skeleton-text {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  color: transparent !important;
+}
+
+.skeleton-tag-card {
+  background: #fff;
+  border: 1px solid #e1dfdd;
+  border-radius: 4px;
+  padding: 16px;
+  height: 80px;
+}
+
+.skeleton-tag-card::before {
+  content: '';
+  display: block;
+  width: 60%;
+  height: 20px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.skeleton-tag-card::after {
+  content: '';
+  display: block;
+  width: 40%;
+  height: 14px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.search-input:disabled {
+  background: #f3f2f1;
+  cursor: not-allowed;
+}
+
 /* Mobile responsive styles */
 @media (max-width: 768px) {
   .app-container {

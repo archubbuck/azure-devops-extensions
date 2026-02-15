@@ -41,6 +41,7 @@ const API_BATCH_SIZE = 200;
 export function App({ onReady }: AppProps) {
   const [workItems, setWorkItems] = useState<WorkItemRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState<{ current: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [projectName, setProjectName] = useState('');
   const [offlineChanges, setOfflineChanges] = useState<OfflineChange[]>([]);
@@ -278,6 +279,7 @@ export function App({ onReady }: AppProps) {
   const fetchWorkItems = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadingProgress(null);
       setError(null);
 
       const client = getClient(WorkItemTrackingRestClient);
@@ -293,6 +295,12 @@ export function App({ onReady }: AppProps) {
       
       projectIdRef.current = project.id;
       setProjectName(project.name);
+      
+      // Notify ready immediately after we have project info - UI is visible now
+      if (!hasNotifiedReady.current && onReady) {
+        hasNotifiedReady.current = true;
+        onReady();
+      }
 
       // Escape single quotes in the project name to safely embed it in the WIQL string literal
       const escapedProjectName = project.name.replace(/'/g, "''");
@@ -307,14 +315,10 @@ export function App({ onReady }: AppProps) {
       if (!queryResult.workItems || queryResult.workItems.length === 0) {
         setWorkItems([]);
         setLoading(false);
+        setLoadingProgress(null);
         
         // Cache empty data
         localStorage.setItem(DATA_CACHE_KEY, JSON.stringify([]));
-        
-        if (!hasNotifiedReady.current && onReady) {
-          hasNotifiedReady.current = true;
-          onReady();
-        }
         return;
       }
 
@@ -324,6 +328,9 @@ export function App({ onReady }: AppProps) {
         .map((wi) => wi.id)
         .filter((id): id is number => id !== undefined);
       
+      // Initialize progress tracking
+      setLoadingProgress({ current: 0, total: workItemIds.length });
+      
       // Batch fetch work items (API limit is API_BATCH_SIZE per request)
       const allWorkItems: WorkItem[] = [];
       
@@ -331,6 +338,9 @@ export function App({ onReady }: AppProps) {
         const batch = workItemIds.slice(i, i + API_BATCH_SIZE);
         const items = await client.getWorkItems(batch, undefined, undefined, undefined, project.name);
         allWorkItems.push(...items);
+        
+        // Update progress
+        setLoadingProgress({ current: allWorkItems.length, total: workItemIds.length });
       }
 
       // Transform to grid rows
@@ -352,18 +362,13 @@ export function App({ onReady }: AppProps) {
 
       setWorkItems(rows);
       setLoading(false);
+      setLoadingProgress(null);
       
       // Cache data for offline use
       try {
         localStorage.setItem(DATA_CACHE_KEY, JSON.stringify(rows));
       } catch (err) {
         console.warn('Failed to cache data:', err);
-      }
-      
-      // Notify that the app is ready after initial load
-      if (!hasNotifiedReady.current && onReady) {
-        hasNotifiedReady.current = true;
-        onReady();
       }
     } catch (err) {
       console.error('Failed to fetch work items:', err);
@@ -381,6 +386,7 @@ export function App({ onReady }: AppProps) {
       }
       
       setLoading(false);
+      setLoadingProgress(null);
       
       // Still notify ready even on error so the extension doesn't hang
       if (!hasNotifiedReady.current && onReady) {
@@ -403,7 +409,9 @@ export function App({ onReady }: AppProps) {
       <div className="header">
         <h1>Excel-Native Web Grid</h1>
         <div className="status-bar">
-          <span className="project-name">Project: {projectName}</span>
+          <span className="project-name">
+            Project: {projectName || (loading ? 'Loading...' : 'Unknown')}
+          </span>
           <span className="connection-status">
             <span role="img" aria-label={isOnline ? 'Online' : 'Offline'}>
               {isOnline ? '🟢' : '🔴'}
@@ -426,6 +434,14 @@ export function App({ onReady }: AppProps) {
               Syncing...
             </span>
           )}
+          {loading && loadingProgress && (
+            <span className="loading-progress">
+              <span role="img" aria-label="Loading">
+                ⏳
+              </span>{' '}
+              Loading {loadingProgress.current.toLocaleString()} / {loadingProgress.total.toLocaleString()} items...
+            </span>
+          )}
           <button onClick={fetchWorkItems} disabled={loading} className="refresh-btn">
             <span role="img" aria-label="Refresh">
               🔄
@@ -445,8 +461,22 @@ export function App({ onReady }: AppProps) {
       )}
 
       {loading && workItems.length === 0 ? (
-        <div className="loading-container">
-          <div className="loading-spinner">Loading work items...</div>
+        <div className="ag-theme-alpine grid-wrapper">
+          <div className="loading-overlay">
+            <div className="skeleton-grid">
+              <div className="skeleton-header"></div>
+              <div className="skeleton-row"></div>
+              <div className="skeleton-row"></div>
+              <div className="skeleton-row"></div>
+              <div className="skeleton-row"></div>
+              <div className="skeleton-row"></div>
+            </div>
+            {loadingProgress && (
+              <div className="loading-message">
+                Loading work items: {loadingProgress.current} / {loadingProgress.total}
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         <div className="ag-theme-alpine grid-wrapper">
@@ -470,7 +500,7 @@ export function App({ onReady }: AppProps) {
 
       <div className="footer">
         <div className="stats">
-          Total Work Items: {workItems.length.toLocaleString()}
+          Total Work Items: {loading && workItems.length === 0 ? 'Loading...' : workItems.length.toLocaleString()}
         </div>
         <div className="help-text">
           <span role="img" aria-label="Tip">
