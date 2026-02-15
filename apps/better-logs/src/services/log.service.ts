@@ -42,10 +42,26 @@ class LogService {
         try {
           const parsed = JSON.parse(event.newValue);
           // Convert timestamp strings back to Date objects
-          this.logs = parsed.map((log: LogEntry) => ({
+          const incomingLogs: LogEntry[] = parsed.map((log: LogEntry) => ({
             ...log,
             timestamp: new Date(log.timestamp),
           }));
+          
+          // Merge incoming logs with current logs using deduplication
+          const currentLogMap = new Map<string, LogEntry>();
+          this.logs.forEach(log => currentLogMap.set(log.id, log));
+          
+          const mergedLogs = [...incomingLogs];
+          this.logs.forEach(log => {
+            // Add logs from current instance that aren't in incoming logs
+            if (!incomingLogs.find(incoming => incoming.id === log.id)) {
+              mergedLogs.push(log);
+            }
+          });
+          
+          // Sort by timestamp (newest first) and update
+          mergedLogs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+          this.logs = mergedLogs.slice(0, this.MAX_LOGS);
         } catch (error) {
           this.originalConsole.error('Failed to sync logs from storage event:', error);
         }
