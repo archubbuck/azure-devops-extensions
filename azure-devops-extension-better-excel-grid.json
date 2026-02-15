@@ -3,7 +3,7 @@
   "id": "better-excel-grid",
   "publisher": "notification-hub-publisher",
   "version": "10.0.57",
-  "name": "Excel-Native Web Grid",
+  "name": "Better Excel Grid",
   "description": "A high-performance web-based grid for bulk editing work items with offline sync capabilities",
   "public": false,
   "categories": [
@@ -21,7 +21,7 @@
     {
       "id": "excel-grid-hub",
       "type": "ms.vss-web.hub",
-      "description": "Excel-Native Web Grid for bulk work item editing",
+      "description": "Better Excel Grid for bulk work item editing",
       "targets": [
         "ms.vss-work-web.work-hub-group"
       ],

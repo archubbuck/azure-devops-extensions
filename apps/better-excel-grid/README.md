@@ -1,4 +1,4 @@
-# Excel-Native Web Grid
+# Better Excel Grid
 
 A high-performance web-based grid component for bulk editing of Azure DevOps work items directly within the browser.
 
