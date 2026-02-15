@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import LogService from '../services/log.service';
-import { LogEntry, LogLevel, LogFilter, LogStats } from '../types/log';
+import { LogService, LogEntry, LogLevel, LogFilter, LogStats } from '@azure-devops-extensions/shared-logging';
 import LogItem from './LogItem';
 import './LogPanel.css';
 

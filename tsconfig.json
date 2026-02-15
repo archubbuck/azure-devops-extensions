@@ -11,6 +11,9 @@
     },
     {
       "path": "./apps/better-logs"
+    },
+    {
+      "path": "./libs/shared/logging"
     }
   ]
 }

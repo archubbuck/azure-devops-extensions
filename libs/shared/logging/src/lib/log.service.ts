@@ -1,5 +1,5 @@
 import * as SDK from 'azure-devops-extension-sdk';
-import { LogEntry, LogLevel, LogFilter, LogStats } from '../types/log';
+import { LogEntry, LogLevel, LogFilter, LogStats } from './types.js';
 
 /**
  * LogService - Singleton service for centralized log management
@@ -150,7 +150,10 @@ class LogService {
       try {
         const extensionContext = SDK.getExtensionContext();
         entry.extensionId = extensionContext.id;
-        entry.extensionName = extensionContext.name;
+        // IExtensionContext doesn't have a 'name' property
+        // Parse the id (format: "publisher.extension-name") to get a readable name
+        const idParts = extensionContext.id.split('.');
+        entry.extensionName = idParts.length > 1 ? idParts[1] : extensionContext.id;
       } catch {
         // SDK not available yet
       }
