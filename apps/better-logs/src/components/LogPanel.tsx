@@ -85,7 +85,8 @@ export function LogPanel({ onReady }: LogPanelProps) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `logs-${new Date().toISOString()}.json`;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    a.download = `logs-${timestamp}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

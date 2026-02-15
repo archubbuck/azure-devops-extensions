@@ -1,4 +1,5 @@
 import { render } from '@testing-library/react';
+import { vi, describe, it, expect } from 'vitest';
 
 import App from './app';
 
@@ -16,31 +17,24 @@ vi.mock('azure-devops-extension-sdk', () => ({
 
 // Mock LogService
 vi.mock('../services/log.service', () => {
-  return {
-    default: vi.fn().mockImplementation(() => ({
-      getLogs: vi.fn().mockReturnValue([]),
-      getStats: vi.fn().mockReturnValue({
-        total: 0,
-        byLevel: { debug: 0, info: 0, warn: 0, error: 0 },
-        bySource: {},
-        byExtension: {},
-      }),
-      addLog: vi.fn(),
-      clearLogs: vi.fn(),
-      exportLogs: vi.fn().mockReturnValue('[]'),
-    })),
-    getInstance: vi.fn().mockReturnValue({
-      getLogs: vi.fn().mockReturnValue([]),
-      getStats: vi.fn().mockReturnValue({
-        total: 0,
-        byLevel: { debug: 0, info: 0, warn: 0, error: 0 },
-        bySource: {},
-        byExtension: {},
-      }),
-      addLog: vi.fn(),
-      clearLogs: vi.fn(),
-      exportLogs: vi.fn().mockReturnValue('[]'),
+  const mockInstance = {
+    getLogs: vi.fn().mockReturnValue([]),
+    getStats: vi.fn().mockReturnValue({
+      total: 0,
+      byLevel: { debug: 0, info: 0, warn: 0, error: 0 },
+      bySource: {},
+      byExtension: {},
     }),
+    addLog: vi.fn(),
+    clearLogs: vi.fn(),
+    exportLogs: vi.fn().mockReturnValue('[]'),
+  };
+
+  return {
+    // Mock the default-exported class with a static getInstance()
+    default: {
+      getInstance: vi.fn().mockReturnValue(mockInstance),
+    },
   };
 });
 

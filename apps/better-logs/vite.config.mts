@@ -11,11 +11,11 @@ export default defineConfig(() => ({
   base: './',
   cacheDir: '../../node_modules/.vite/apps/better-logs',
   server: {
-    port: 4203,
+    port: 4204,
     host: 'localhost',
   },
   preview: {
-    port: 4303,
+    port: 4304,
     host: 'localhost',
   },
   plugins: [react()],
@@ -26,5 +26,10 @@ export default defineConfig(() => ({
     commonjsOptions: {
       transformMixedEsModules: true,
     },
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    include: ['src/**/*.spec.{ts,tsx}'],
   },
 }));

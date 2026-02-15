@@ -4,7 +4,7 @@
   "publisher": "notification-hub-publisher",
   "version": "10.0.0",
   "name": "Better Logs",
-  "description": "Centralized log management hub for Azure DevOps extensions. Captures and displays logs from all extensions in a unified interface.",
+  "description": "Centralized log management hub for Azure DevOps extensions. Captures and displays logs from this extension in a unified interface and serves as a template for adding centralized logging to other extensions.",
   "public": false,
   "categories": [
     "Azure Boards",
