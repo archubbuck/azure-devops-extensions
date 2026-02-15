@@ -169,6 +169,8 @@
 .filter-tab:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
 /* Mobile responsive styles */
 @media (max-width: 768px) {
   .panel-header {

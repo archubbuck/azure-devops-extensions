@@ -187,6 +187,8 @@
   color: #0078d4;
   font-weight: 500;
   z-index: 10;
+}
+
 /* Mobile responsive styles */
 @media (max-width: 768px) {
   .header {

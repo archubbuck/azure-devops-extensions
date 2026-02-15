@@ -321,6 +321,8 @@
 .search-input:disabled {
   background: #f3f2f1;
   cursor: not-allowed;
+}
+
 /* Mobile responsive styles */
 @media (max-width: 768px) {
   .app-container {
