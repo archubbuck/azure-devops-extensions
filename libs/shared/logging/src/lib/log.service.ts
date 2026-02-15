@@ -150,7 +150,8 @@ class LogService {
       try {
         const extensionContext = SDK.getExtensionContext();
         entry.extensionId = extensionContext.id;
-        entry.extensionName = extensionContext.id; // Use id as name
+        // Note: IExtensionContext doesn't have a 'name' property, so we use id
+        entry.extensionName = extensionContext.id;
       } catch {
         // SDK not available yet
       }
