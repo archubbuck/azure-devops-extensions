@@ -270,6 +270,12 @@ When adding new features or fixes:
 3. Add appropriate tests
 4. Update documentation as needed
 5. Follow the Azure DevOps extension guidelines
+6. Ensure mobile responsiveness (see [Mobile Responsive Design Guidelines](docs/MOBILE_RESPONSIVE_DESIGN.md))
+
+## Documentation
+
+- [Mobile Responsive Design Guidelines](docs/MOBILE_RESPONSIVE_DESIGN.md) - Best practices for mobile-friendly extensions
+- [CD Workflow Simplification](docs/CD_WORKFLOW_SIMPLIFICATION.md) - Details on the deployment pipeline
 
 ## License
 
