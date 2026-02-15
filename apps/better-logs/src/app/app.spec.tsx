@@ -16,7 +16,7 @@ vi.mock('azure-devops-extension-sdk', () => ({
 }));
 
 // Mock LogService
-vi.mock('../services/log.service', () => {
+vi.mock('@azure-devops-extensions/shared-logging', () => {
   const mockInstance = {
     getLogs: vi.fn().mockReturnValue([]),
     getStats: vi.fn().mockReturnValue({
@@ -31,9 +31,16 @@ vi.mock('../services/log.service', () => {
   };
 
   return {
-    // Mock the default-exported class with a static getInstance()
-    default: {
+    // Mock the named export LogService class with a static getInstance()
+    LogService: {
       getInstance: vi.fn().mockReturnValue(mockInstance),
+    },
+    // Mock types as enums
+    LogLevel: {
+      Debug: 'debug',
+      Info: 'info',
+      Warn: 'warn',
+      Error: 'error',
     },
   };
 });

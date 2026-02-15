@@ -1,4 +1,4 @@
-import { LogEntry, LogLevel } from '../types/log';
+import { LogEntry, LogLevel } from '@azure-devops-extensions/shared-logging';
 import './LogItem.css';
 
 interface LogItemProps {
