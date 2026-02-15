@@ -150,8 +150,10 @@ class LogService {
       try {
         const extensionContext = SDK.getExtensionContext();
         entry.extensionId = extensionContext.id;
-        // Note: IExtensionContext doesn't have a 'name' property, so we use id
-        entry.extensionName = extensionContext.id;
+        // IExtensionContext doesn't have a 'name' property
+        // Parse the id (format: "publisher.extension-name") to get a readable name
+        const idParts = extensionContext.id.split('.');
+        entry.extensionName = idParts.length > 1 ? idParts[1] : extensionContext.id;
       } catch {
         // SDK not available yet
       }
