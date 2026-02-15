@@ -331,7 +331,7 @@ class LogService {
       const mergedLogs: LogEntry[] = [...existingLogs];
       this.logs.forEach(log => {
         if (!existingLogMap.has(log.id)) {
-          mergedLogs.unshift(log); // Add new logs to the beginning
+          mergedLogs.push(log); // Add new logs (will be sorted below)
         }
       });
       
