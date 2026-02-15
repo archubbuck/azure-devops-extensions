@@ -4,9 +4,23 @@ This repository is an Nx-powered monorepo engineered to develop and scale multip
 
 ## Project Overview
 
-This monorepo currently contains two extensions:
+This monorepo currently contains three extensions:
 
-### 1. Notification Hub
+### 1. Excel-Native Web Grid
+
+A high-performance web-based grid component for bulk editing of work items directly within Azure DevOps.
+
+**Features:**
+- 🚀 **High Performance**: Handles 50,000+ rows without latency using AG Grid virtualization
+- ✏️ **Bulk Editing**: Direct cell editing with multi-cell selection support
+- 🎨 **HTML Rich Text**: Preserves HTML formatting in description fields with safe rendering
+- 💾 **Offline Sync**: Local storage-backed queue for changes during connectivity issues
+- 🔄 **Auto Sync**: Automatic synchronization when connection is restored
+- 📊 **Comprehensive Fields**: Edit Title, State, Assigned To, Tags, Priority, and Description
+- 🔍 **Advanced Filtering**: Sort and filter across all columns
+- 📱 **Real-time Status**: Online/offline indicator with pending changes counter
+
+### 2. Notification Hub
 
 A centralized notification hub for Azure DevOps that aggregates activity across your projects.
 
@@ -20,7 +34,7 @@ A centralized notification hub for Azure DevOps that aggregates activity across 
 - 🔍 **Filters**: Filter notifications by type (All, Unread, Mentions, PRs, Work Items)
 - 🔗 **Deep Links**: Click any notification to navigate directly to the artifact
 
-### 2. Hello Azure DevOps
+### 3. Hello Azure DevOps
 
 A basic Azure DevOps extension that demonstrates automated deployment via CI/CD pipeline.
 
@@ -60,12 +74,20 @@ npm run build
 # Build individual extensions
 npm run build:notification-hub
 npm run build:hello-azure
+npm run build:tag-manager
+npm run build:excel-grid
 
 # Start development server for notification-hub (default)
 npm run dev
 
 # Start development server for hello-azure
 npm run dev:hello-azure
+
+# Start development server for tag-manager
+npm run dev:tag-manager
+
+# Start development server for excel-grid
+npm run dev:excel-grid
 
 # Run linting for all extensions
 npm run lint
@@ -87,6 +109,8 @@ npm run build
 # The built files will be in:
 # - apps/notification-hub/dist/
 # - apps/hello-azure/dist/
+# - apps/tag-manager/dist/
+# - apps/better-excel-grid/dist/
 ```
 
 **Build Output**: The build process uses Nx with Vite to create optimized production bundles:
@@ -169,6 +193,8 @@ To set up automated publishing:
 Each extension has its own manifest file:
 - `azure-devops-extension-notification-hub.json` - Notification Hub extension
 - `azure-devops-extension-hello-azure.json` - Hello Azure DevOps extension
+- `azure-devops-extension-tag-manager.json` - Tag Manager extension
+- `azure-devops-extension-excel-grid.json` - Excel-Native Web Grid extension
 
 These files define:
 - Extension metadata (name, description, version)
@@ -183,6 +209,18 @@ For detailed instructions on packaging and deploying the extension, see [DEPLOYM
 ```
 azure-devops-extensions/
 ├── apps/
+│   ├── better-excel-grid/          # Excel-Native Web Grid extension
+│   │   ├── src/
+│   │   │   ├── app/                # Main app component
+│   │   │   │   ├── app.tsx         # Grid component with AG Grid
+│   │   │   │   └── app.css         # Grid styles
+│   │   │   ├── main.tsx            # Entry point with SDK initialization
+│   │   │   └── styles.css          # Global styles
+│   │   ├── public/                 # Static assets
+│   │   │   └── favicon.ico         # Extension icon
+│   │   ├── vite.config.mts         # Vite configuration
+│   │   └── dist/                   # Built output (ignored by git)
+│   ├── tag-manager/                # Tag Manager extension
 │   ├── hello-azure/                # Hello Azure DevOps extension
 │   │   ├── src/
 │   │   │   ├── app/                # Main app component

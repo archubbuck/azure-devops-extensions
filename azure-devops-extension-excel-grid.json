@@ -1,0 +1,48 @@
+{
+  "manifestVersion": 1,
+  "id": "better-excel-grid",
+  "publisher": "notification-hub-publisher",
+  "version": "10.0.0",
+  "name": "Excel-Native Web Grid",
+  "description": "A high-performance web-based grid for bulk editing work items with offline sync capabilities",
+  "public": false,
+  "categories": [
+    "Azure Boards"
+  ],
+  "targets": [
+    {
+      "id": "Microsoft.VisualStudio.Services"
+    }
+  ],
+  "icons": {
+    "default": "apps/better-excel-grid/dist/favicon.ico"
+  },
+  "contributions": [
+    {
+      "id": "excel-grid-hub",
+      "type": "ms.vss-web.hub",
+      "description": "Excel-Native Web Grid for bulk work item editing",
+      "targets": [
+        "ms.vss-work-web.work-hub-group"
+      ],
+      "properties": {
+        "name": "Excel Grid",
+        "uri": "apps/better-excel-grid/dist/index.html"
+      }
+    }
+  ],
+  "scopes": [
+    "vso.work",
+    "vso.work_write"
+  ],
+  "files": [
+    {
+      "path": "apps/better-excel-grid/dist",
+      "addressable": true
+    }
+  ],
+  "metadata": {
+    "lastVersionCommit": "",
+    "lastVersionUpdate": ""
+  }
+}
