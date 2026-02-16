@@ -61,15 +61,74 @@ export function App({ onReady }: AppProps) {
         onReady();
       }
 
-      // Get all tags from the project
-      const workItemTags = await client.getTags(projectInfo.id);
+      // Get all tags from the project by querying work items
+      // Note: Azure DevOps doesn't have a dedicated getTags API endpoint.
+      // Tags are stored in the System.Tags field of work items as semicolon-separated strings.
+      // We query work items with tags and extract unique tag names.
       
-      const tagList: Tag[] = workItemTags.map((tag) => ({
-        id: tag.id || tag.name,
-        name: tag.name,
-        active: tag.active !== false,
-        lastUpdated: tag.lastUpdated?.toISOString(),
-      }));
+      // Escape single quotes in the project name for WIQL
+      const escapedProjectName = projectInfo.name.replace(/'/g, "''");
+      
+      // Query for work items that have tags
+      const wiql = {
+        query: `SELECT [System.Id], [System.Tags] FROM WorkItems WHERE [System.TeamProject] = '${escapedProjectName}' AND [System.Tags] <> '' ORDER BY [System.Id] DESC`
+      };
+
+      // Add timeout protection (30 seconds)
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Query timeout after 30 seconds')), 30000)
+      );
+
+      const queryResult = await Promise.race([
+        client.queryByWiql(wiql, { project: projectInfo.name }),
+        timeoutPromise
+      ]);
+      
+      let tagList: Tag[] = [];
+      
+      if (queryResult.workItems && queryResult.workItems.length > 0) {
+        // Limit to first 1000 work items for performance (batch fetch 200 at a time)
+        const workItemIds = queryResult.workItems
+          .slice(0, 1000)
+          .map(wi => wi.id)
+          .filter((id): id is number => id !== undefined);
+        
+        if (workItemIds.length > 0) {
+          const BATCH_SIZE = 200;
+          const allWorkItems = [];
+          
+          for (let i = 0; i < workItemIds.length; i += BATCH_SIZE) {
+            const batch = workItemIds.slice(i, i + BATCH_SIZE);
+            const items = await Promise.race([
+              client.getWorkItems(batch, undefined, undefined, undefined, projectInfo.name),
+              timeoutPromise
+            ]);
+            allWorkItems.push(...items);
+          }
+          
+          // Extract unique tags from all work items
+          const tagSet = new Set<string>();
+          
+          for (const workItem of allWorkItems) {
+            const tagsField = workItem.fields?.['System.Tags'];
+            if (tagsField && typeof tagsField === 'string') {
+              // Tags are semicolon-separated: "tag1; tag2; tag3"
+              const tags = tagsField.split(';').map(t => t.trim()).filter(t => t.length > 0);
+              tags.forEach(tag => tagSet.add(tag));
+            }
+          }
+          
+          // Convert to Tag array, sorted alphabetically
+          tagList = Array.from(tagSet)
+            .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+            .map((tagName): Tag => ({
+              id: tagName, // Use tag name as ID since ADO tags don't have separate IDs
+              name: tagName,
+              active: true, // All tags are considered active
+              lastUpdated: undefined, // Not available from System.Tags field
+            }));
+        }
+      }
 
       setTags(tagList);
       setFilteredTags(tagList);
